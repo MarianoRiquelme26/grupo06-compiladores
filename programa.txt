@@ -4,7 +4,7 @@ PUT "Ingrese un valor entero para actual: ";
 
 GET actual;
 contador: 65535;
-suma: 02.5+ 0xA2B0;
+suma: 9999999999999999999999999999999999999999999999999999999999999999999999999992.999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999+ 0xA2B0;
 while (contador <= 9) {
 contador: contador + 1; 
 actual: (contador/0.342) + (contador* maximo (actual*contador, 2, actual*pivot,maximo (4,actual,0o250) ) );
