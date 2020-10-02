@@ -23,4 +23,4 @@ Else
 PUT "no es mayor que 2"
  } 
 
-*-esto es un comentario-*
+*-esto es un  AS comentario-*

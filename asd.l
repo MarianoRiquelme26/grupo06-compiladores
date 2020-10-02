@@ -1,11 +1,88 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
 #include <string.h>
+
+typedef struct
+{
+    char token[3];
+    char lexema[10];
+} t_info;
+typedef struct s_nodo_lista
+{
+    t_info dat;
+    struct s_nodo_lista* sig;
+} t_nodo_lista;
+typedef t_nodo_lista* t_lista;
+
+typedef int (*t_cmp)(const void*,const void*);
+    
+int comp(const void* d1,const void *d2)
+{
+    t_info *dat1=(t_info*)d1;
+    t_info *dat2=(t_info*)d2;
+	return strcmp(dat1->lexema,dat2->lexema);
+}
+
+
 FILE *yyin;
 int yylval;
 char *yyltext;
+t_lista lista1;
+t_info dat;
+//PRIMITIVAS DE LISTA
+void listaCrear(t_lista* pl)
+{
+    *pl=NULL;
+}
+int listaVacia(const t_lista* pl)
+{
+    return !*pl;
+}
+void listaVaciar(t_lista* pl,t_info* dat)
+{
+    t_nodo_lista* elim;
+
+    while(*pl)
+    {
+        elim=*pl;
+		*dat=elim->dat;
+		printf("token :%s\t%s\n",dat->token,dat->lexema);
+        *pl=elim->sig;
+        free(elim);
+		
+    }
+}
+
+int listaBuscar(const t_lista* pl,t_info* dat,t_cmp comp)
+{
+    while(*pl){
+		if(comp(dat,&(*pl)->dat)==0)
+		{printf("token :%s\t%s\n",dat->token,dat->lexema);
+			return 1;
+		}
+		pl=&(*pl)->sig;
+	}
+    
+    return 0;
+}
+
+int insertarLista(t_lista* pl,t_info* dat)
+{
+    t_nodo_lista* nuevo;
+
+    nuevo=(t_nodo_lista*)malloc(sizeof(t_nodo_lista));
+    if(!nuevo)
+        return 0;
+    nuevo->dat=*dat;
+    nuevo->sig=*pl;
+    *pl=nuevo;
+    return 1;
+}
+
+
+////////////////////
+
 %}
 %option noyywrap
 %option yylineno
@@ -18,7 +95,7 @@ FLOAT 			"Float"
 STRING 			"String"
 DIM 	        "DIM"
 AS 				"AS"
-WHILE			"WHILE"
+WHILE			"WHILE"|"while"
 AND 			"AND"|"and"
 OR              "OR"
 NOT 			"NOT"
@@ -62,10 +139,15 @@ COMENTARIO		{COM_ABRE}.{TEXT}+.{COM_CIERRA}
 OP_MUL			[*]
 RES				[-]
 
+/*
+	FALTA AGREGAR TODOS LOS CARACTERES ESEPECIALES
+*/
 
 %%
 
 {PUT}			printf("put: %s\n",yytext);
+{AS}			printf("AS: %s\n",yytext);
+{DIM}			printf("DIM: %s\n",yytext);
 {AND}			printf("arega condicion: %s\n",yytext);
 {GET}			printf("get: %s\n",yytext);
 {IF}			printf("inicio di condicionl: %s\n",yytext);
@@ -88,16 +170,33 @@ RES				[-]
 {INTEGER}		printf("Integer: %s\n",yytext);
 {FLOAT}			printf("Float: %s\n",yytext);
 {STRING}		printf("String: %s\n",yytext);
-{ID}			printf("Identificador: %s\n",yytext);
+{ID}			{
+					printf("Identificador: %s\n",yytext);
+					strcpy(dat.token,"ID");
+					strcpy(dat.lexema,yytext);
+					if(!listaBuscar(&lista1,&dat,comp)){
+						insertarLista(&lista1,&dat);
+					}
+					
+				}
 {FIN_SENT}		printf("Fin sentencia: %s\n",yytext);
 {SEPARADOR}		printf("Separador de variables: %s\n",yytext);
 {ESP}			printf("");
-{CTE_ENT}		{if(atoi(yytext)<=65535){
-								
-					printf("Constante entera: %s\n",yytext);
-				  } else {
+{CTE_ENT}		{
+					if(atoi(yytext)<=65535)
+					{
+						printf("Constante entera: %s\n",yytext);
+						strcpy(dat.token,"CTE");
+						strcpy(dat.lexema,yytext);
+						if(!listaBuscar(&lista1,&dat,comp)){
+							insertarLista(&lista1,&dat);
+						}
+					
+					}
+					else {
 					printf("Error - supero el limite de la variable: %s\n",yytext);
 					}
+					
 				}
 {CTE_REAL}   	{if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F){
 					printf("Constante en real: %s\n",yytext);
@@ -130,6 +229,10 @@ RES				[-]
 %%
 
 int main (int argc,char *argv[]){
+
+ //creo la tabla de simbolos
+ listaCrear(&lista1);
+	
  if ((yyin=fopen(argv[1],"rt"))==NULL)
  {
   	printf("\nNo se puede abrir el archivo: %s\n",argv[1]);
@@ -138,6 +241,11 @@ int main (int argc,char *argv[]){
 	yylex();
  }
  fclose(yyin);
+ //vacio la tabla de simbolos
+ printf("------------------------------------------\n");
+ printf("-----TABLA DE SIMBOLOS--------------------\n");
+ printf("------------------------------------------\n");
+ listaVaciar(&lista1,&dat);
  return 0;
 }
 int yyerror(void)
