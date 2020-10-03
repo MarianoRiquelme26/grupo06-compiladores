@@ -30,28 +30,30 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 "PUT"			{return PUT;}
 "AS"			{return AS;}
 "DIM"			{return DIM;}
-"AND"			{return AND;}
 "GET"			{return GET;}
-"IF"			{return IF;}
-"ELSE"			{return ELSE;}
-"WHILE"			{return WHILE;}
+"if"			{return IF;}
+"Else"			{return ELSE;}
+"while"			{return WHILE;}
 "{"				{return LLAVE_I;}
 "}"				{return LLAVE_F;}
+"["				{return CORCHETE_I;}
+"]"				{return CORCHETE_F;}
 "+"				{return OP_SUM;}
+"-"				{return OP_RES;}
+"*"				{return OP_MULT;}
+"/"				{return OP_DIV;}
 "("				{return PAR_I;}
 ")"				{return PAR_F;}
 ":="			{return OP_AS;}
-"/"				{return OP_DIV;}
-"-"				{return OP_RES;}
 ">"				{return MAYOR;}
 "<"				{return MENOR;}
 "=="			{return COMPARACION;}
 ">="			{return MAYOR_IGUAL;}
 "<="			{return MENOR_IGUAL;}
 "<>"			{return DISTINTO;}
-"integer"		{return INTEGER;}
-"float"			{return FLOAT;}
-"string"		{return STRING;}
+"Integer"		{return INTEGER;}
+"Float"			{return FLOAT;}
+"String"		{return STRING;}
 ";"				{return FIN_SENT;}
 ","				{return COMA;}
 " "				{return ESPACIO;}
@@ -59,6 +61,7 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 "||"            {return OPER_OR;}
 "&&" 			{return OPER_AND;}
 "!" 			{return OPER_NOT;}
+"maximo" 		{return MAXIMO;}
 
 {ID}			{
 					printf("Identificador: %s\n",yytext);
