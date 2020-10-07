@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sintactico.tab.h"
+#include "y.tab.h"
 
 FILE *yyin;
 int yylval;
@@ -65,6 +65,7 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 
 {ID}			{
 					printf("Identificador: %s\n",yytext);
+					yylval.str_val = strdup(yytext);
 					return ID;
 					
 				}
@@ -72,6 +73,7 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 					if(atoi(yytext)<=65535)
 					{
 						printf("Constante entera: %s\n",yytext);
+						yylval.int_val = strdup(yytext);
 						return CTE_ENT;
 					
 					}
@@ -82,6 +84,7 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 				}
 {CTE_REAL}   	{if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F){
 					printf("Constante en real: %s\n",yytext);
+					yylval.real_val = strdup(yytext);
 					return CTE_REAL;
 					
 			     } else {
@@ -90,6 +93,7 @@ COMENTARIO		"*-".{TEXTO}+."-*"
 				}
 {CTE_STRING}		{if(strlen(yytext) <= 40){
 						printf("Texto por consola: %s\n",yytext);
+						yylval.str_val = strdup(yytext);
 						return CTE_STRING;
 						
 			     } else {

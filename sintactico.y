@@ -14,7 +14,7 @@ FILE  *yyin;
 
 //OPERADORES ARITMERICOS
 %token OP_SUM
-%token OP_REST
+%token OP_RES
 %token OP_MUL
 %token OP_DIV 
 
@@ -48,6 +48,7 @@ FILE  *yyin;
 %token DIM
 %token AS
 %token PUT
+%token MAXIMO
 
 //PARENTESIS Y LLAVES Y CORCHETES
 %token PAR_I
@@ -75,25 +76,29 @@ programa:
       ;
 
 bloque_declaracion:
-      DEFVAR declaraciones ENDDEF
+      DIM declaracionesvar AS declaracionestipo
       {
             printf("DECLARACIONES OK\n");
       }
       ;
-
-declaraciones:
-      declaraciones declaracion
-      |declaracion
+declaracionestipo:
+      declaracionestipo declaraciontipo
+      |declaraciontipo
       ;
 
-declaracion:
-      tipo_variable D_P lista_id
+declaraciontipo:
+	  MENOR tipo_variable_lista MAYOR
+	  |MENOR tipo_variable MAYOR
       {
         guardar_variables_ts();
       }
       ;
+tipo_dato_lista:
+		tipo_dato_lista COMA tipo_dato
+		| tipo_dato
 
-tipo_variable:
+
+tipo_dato:
       INTEGER
       {
         strcpy(tipo_dato,$<str_val>1);
@@ -107,9 +112,22 @@ tipo_variable:
         strcpy(tipo_dato,$<str_val>1);
       }
       ;
+	  
+declaracionesvar:
+      declaracionesvar declaracionvar
+      |declaracionvar
+      ;
 
-lista_id:
-      lista_id PYC ID
+declaracionvar:
+	  MENOR tipo_variable_lista MAYOR
+	  |MENOR tipo_variable MAYOR
+      {
+        guardar_variables_ts();
+      }
+      ;	  
+
+lista_var:
+      lista_var COMA ID
       {
         if(crear_lista_variable($<str_val>3)==NOT_SUCCESS){
             printf("NO HAY MAS MEMORIA \n");
@@ -137,39 +155,21 @@ sentencia:
             {
             printf("ITERACION\n");
       }
-      |between
+      |maximo
       {
-            printf("BETWEEN\n");
+            printf("MAXIMO\n");
       }
       |salida
       |entrada
       ;
 
 salida:
-      DISPLAY ENTERO
-      {
-            //guardar_cte_int($<int_val>2);
-            printf("DISPLAY %d\n",$<int_val>2);
-      }
-      |DISPLAY REAL
-      {
-            //guardar_cte_float($<real_val>2);
-            printf("DISPLAY %f\n",$<real_val>2);
-      }
-      |DISPLAY CADENA
-      {
-            //guardar_cte_string($<str_val>2);
-            printf("DISPLAY %s\n",$<str_val>2);
-      }
-      |DISPLAY ID
-      {
-            if(!existe_simbolo($<str_val>2)){
-                  printf("NO SE DECLARO LA VARIABLE - %s - EN LA SECCION DE DEFINICIONES\n",$<str_val>2);
-                  yyerror();
-            }
-            printf("DISPLAY %s\n",$<str_val>2);
-      }
-      ;
+		PUT CADENA
+		  {
+			//guardar_cte_string($<str_val>2);
+			printf("DISPLAY %s\n",$<str_val>2);
+		  }
+		  ;
 
 entrada:
       GET ID
@@ -182,12 +182,17 @@ entrada:
       }
       ;
 
-between:
-      BETWEEN P_A ID COMA C_A expresion PYC expresion C_C P_C
+maximo:
+      MAXIMO PAR_I lista_factores PAR_C
       ;
 
+lista_factores:
+				lista_factores COMA expresion
+				| termino
+				|factor
+
 asignacion: 
-      ID ASIG expresion
+      ID OP_AS expresion
       {
             switch(verificar_asignacion($<str_val>1)){
                   case 1:     printf("NO SE DECLARO LA VARIABLE - %s - EN LA SECCION DE DEFINICIONES\n",$<str_val>1);
@@ -202,11 +207,11 @@ asignacion:
             }
 
       }
-      |ID operador ASIG expresion
+      |ID operador OP_AS expresion
       {
             printf("ASIGNACION ESPECIAL EXITOSA!\n");
       }
-      |ID ASIG CADENA
+      |ID OP_AS CADENA
       {
             guardar_cte_string($<str_val>3);
             ultima_expresion = "string";
@@ -227,7 +232,7 @@ asignacion:
 
 operador:
       OP_SUMA
-      |OP_RESTA
+      |OP_RES
       |OP_MUL
       |OP_DIV
       ;
@@ -253,18 +258,21 @@ comparacion:
       ;
 
 comparador:
-      OP_L_GT
-      |OP_L_GET
-      |OP_L_LET
-      |OP_L_LT
-      |OP_L_E
-      |OP_L_NE
-      ;
+     MAYOR
+	|MENOR
+	|COMPARACION
+	|MAYOR_IGUAL
+	|MENOR_IGUAL
+	|DISTINTO
+	|OP_AND
+	|OP_OR
+	|OP_NOT
+    ;
 
 		
 expresion:
       termino
-      |expresion OP_RESTA termino
+      |expresion OP_RES termino
       {
             printf("RESTA\n");
       }
