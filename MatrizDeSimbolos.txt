@@ -1,0 +1,2 @@
+token: ID	 lexemas:  pivot,maximo,suma,actual,promedio,contador
+token: CTE	 lexemas:  0b111010,0,0b10,0o250,4,2,0.342,1,9,0xA2B0,99.99,65535

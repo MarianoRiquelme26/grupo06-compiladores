@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+// DEFICION DE ESTRUCTURA DE INFORMACION QUE VA CONTENER EL TOKEN Y LEXEMA //
 typedef struct
 {
-    char token[3];
+    char token[4];
     char lexema[10];
 } t_info;
+// DEFINCION DE LA ESTRUCTURA DE LA LISTA //
 typedef struct s_nodo_lista
 {
     t_info dat;
@@ -16,7 +18,7 @@ typedef struct s_nodo_lista
 typedef t_nodo_lista* t_lista;
 
 typedef int (*t_cmp)(const void*,const void*);
-    
+// FUNCION DE COMPARACION DE LEXEMAS //    
 int comp(const void* d1,const void *d2)
 {
     t_info *dat1=(t_info*)d1;
@@ -24,13 +26,15 @@ int comp(const void* d1,const void *d2)
 	return strcmp(dat1->lexema,dat2->lexema);
 }
 
-
+// VARIABLES REQUERIDAS //
 FILE *yyin;
 int yylval;
 char *yyltext;
 t_lista lista1;
 t_info dat;
-//PRIMITIVAS DE LISTA
+int contadorLetrastID = 0;
+int contadorLetrastCT = 0;
+// PRIMITIVAS DE LISTA //
 void listaCrear(t_lista* pl)
 {
     *pl=NULL;
@@ -41,24 +45,56 @@ int listaVacia(const t_lista* pl)
 }
 void listaVaciar(t_lista* pl,t_info* dat)
 {
+	FILE *pt;
+    char* cad;
+    char lineaID[contadorLetrastID+1];
+	char lineaCTE[contadorLetrastCT+1];
+	strcpy(lineaID,"");
+	strcpy(lineaCTE,"");
     t_nodo_lista* elim;
-
+	pt=fopen("MatrizDeSimbolos.txt","wt");
+    if(!pt)
+    {
+        puts("erro al intentar abrir algun archivo");
+        exit(0);
+    }
+	
     while(*pl)
     {
         elim=*pl;
 		*dat=elim->dat;
-		printf("token :%s\t%s\n",dat->token,dat->lexema);
+		if(strcmp(dat->token,"ID")==0)
+		{
+			strcat(lineaID,",");
+			strcat(lineaID,dat->lexema);
+		}
+			
+		if(strcmp(dat->token,"CTE")==0)
+		{
+			strcat(lineaCTE,",");
+			strcat(lineaCTE,dat->lexema);
+		}
+			
         *pl=elim->sig;
         free(elim);
 		
     }
+	//correcion para borrar la primer coma
+	cad = lineaID;
+	*cad = ' ';
+	cad = lineaCTE;
+	*cad = ' ';
+	// guardo las lineas en la tabla de simbolos //
+	fprintf(pt,"token: ID\t lexemas: %s\n",lineaID);
+	fprintf(pt,"token: CTE\t lexemas: %s\n",lineaCTE);
+	fclose(pt);
 }
 
 int listaBuscar(const t_lista* pl,t_info* dat,t_cmp comp)
 {
     while(*pl){
 		if(comp(dat,&(*pl)->dat)==0)
-		{printf("token :%s\t%s\n",dat->token,dat->lexema);
+		{
 			return 1;
 		}
 		pl=&(*pl)->sig;
@@ -81,7 +117,7 @@ int insertarLista(t_lista* pl,t_info* dat)
 }
 
 
-////////////////////
+///////FIN DE PRIMITVAS/////////////
 
 %}
 %option noyywrap
@@ -176,6 +212,7 @@ RES				[-]
 					strcpy(dat.lexema,yytext);
 					if(!listaBuscar(&lista1,&dat,comp)){
 						insertarLista(&lista1,&dat);
+						contadorLetrastID += strlen(yytext)+1;
 					}
 					
 				}
@@ -185,11 +222,14 @@ RES				[-]
 {CTE_ENT}		{
 					if(atoi(yytext)<=65535)
 					{
-						printf("Constante entera: %s\n",yytext);
+						//printf("Constante entera: %s\n",yytext);
+						
 						strcpy(dat.token,"CTE");
 						strcpy(dat.lexema,yytext);
+						printf("Constante entera: %s\n",dat.lexema);
 						if(!listaBuscar(&lista1,&dat,comp)){
 							insertarLista(&lista1,&dat);
+							contadorLetrastCT += strlen(yytext)+1;
 						}
 					
 					}
@@ -198,15 +238,58 @@ RES				[-]
 					}
 					
 				}
-{CTE_REAL}   	{if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F){
-					printf("Constante en real: %s\n",yytext);
-			     } else {
-			           	printf("ERROR - Fue superado el maximo para la veriable real\n"); 
-				 }
+{CTE_REAL}		{
+					if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F)
+					{
+						printf("Constante en real: %s\n",yytext);
+						
+						strcpy(dat.token,"CTE");
+						strcpy(dat.lexema,yytext);
+
+						if(!listaBuscar(&lista1,&dat,comp)){
+							insertarLista(&lista1,&dat);
+							contadorLetrastCT += strlen(yytext)+1;
+						}
+					
+					}
+					else {
+					printf("ERROR - Fue superado el maximo para la veriable real\n"); 
+					}
+					
 				}
-{CTE_HEX}		printf("Constante en hexa: %s\n",yytext);
-{CTE_OC}		printf("Constante en octal: %s\n",yytext);
-{CTE_BIN}		printf("Constante en binario: %s\n",yytext);
+
+{CTE_HEX}		{
+					printf("Constante en hexa: %s\n",yytext);
+					strcpy(dat.token,"CTE");
+					strcpy(dat.lexema,yytext);
+					if(!listaBuscar(&lista1,&dat,comp)){
+						insertarLista(&lista1,&dat);
+						contadorLetrastCT += strlen(yytext)+1;
+					}
+					
+				}	
+{CTE_OC}		{
+					printf("Constante en octal: %s\n",yytext);
+					strcpy(dat.token,"CTE");
+					strcpy(dat.lexema,yytext);
+					if(!listaBuscar(&lista1,&dat,comp)){
+						insertarLista(&lista1,&dat);
+						contadorLetrastCT += strlen(yytext)+1;
+					}
+					
+				}	
+				
+{CTE_BIN}		{
+					printf("Constante en binario: %s\n",yytext);
+					strcpy(dat.token,"CTE");
+					strcpy(dat.lexema,yytext);
+					if(!listaBuscar(&lista1,&dat,comp)){
+						insertarLista(&lista1,&dat);
+						contadorLetrastCT += strlen(yytext)+1;
+					}
+					
+				}
+				
 {COMILLA}		printf("Comilla: %s\n",yytext);
 {TEXT_W}		{if(strlen(yytext) <= 40){
 					printf("Texto por consola: %s\n",yytext);
@@ -241,10 +324,7 @@ int main (int argc,char *argv[]){
 	yylex();
  }
  fclose(yyin);
- //vacio la tabla de simbolos
- printf("------------------------------------------\n");
- printf("-----TABLA DE SIMBOLOS--------------------\n");
- printf("------------------------------------------\n");
+ //Genero la tabla de simbolos
  listaVaciar(&lista1,&dat);
  return 0;
 }
