@@ -286,6 +286,9 @@ comparador:
 	
 bloque:
 	 LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
+	 
+bloque_anidado:
+	 LLAVE_I decision_IF LLAVE_F {printf("	Bloque de codigo\n");};
 
 maximo:
 	MAX PAR_I lista_factores PAR_F {printf("	Definicion del maximo\n");};
@@ -294,18 +297,26 @@ lista_factores:
 	 lista_factores SEPARADOR expresion {printf("	Definicion de la lista de valroes\n");}
 	|expresion {printf("	La lista puede ser un terminon\n");};
 
+decision_IF:
+	 IF PAR_I condicion PAR_F bloque {printf("	Definicion de IF con bloque\n");}	
+	|IF PAR_I condicion PAR_F sentencia {printf("	Definicion de IF con bloque\n");}
+	|IF PAR_I condicion PAR_F bloque_anidado {printf("	Definicion de IF con bloque\n");}
+	;
+decision_else:
+	 ELSE bloque {printf("	Definicion de IF con bloque\n");}
+	|ELSE sentencia {printf("	Definicion de IF con bloque\n");}
+	|ELSE bloque_anidado {printf("	Definicion de IF con bloque\n");}
+	;
 decision:
-	 IF PAR_I condicion PAR_F bloque ELSE bloque{printf("	Definicion de IF con bloque\n");}	
-	|IF PAR_I condicion PAR_F sentencia ELSE bloque{printf("	Definicion de IF con bloque\n");}
-	|IF PAR_I condicion PAR_F sentencia ELSE sentencia{printf("	Definicion de IF con bloque\n");}
-	|IF PAR_I condicion PAR_F bloque ELSE sentencia{printf("	Definicion de IF con bloque\n");}
+	decision_IF decision_else {printf("	Definicion de IF con bloque\n");}
+	|decision_IF sentencia {printf("	Definicion de IF con bloque\n");}
 	;
 /*
 bloque_else:
 	 ELSE bloque {printf("	Else con sentencias\n");}
 	|ELSE sentencia {printf("	Else con una sola sentencia\n");}
 	//|{printf("	Else vacio\n");}*/
-	;
+	
 %%	
 /*
 int yylex(void)
