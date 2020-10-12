@@ -177,7 +177,7 @@ int insertarLista(t_lista* pl,t_info* dat)
 
 %%
 programa :
-	 programa sentencia {printf("	FIN\n");}
+	 programa sentencia {printf("	FIN programa\n");}
 	|sentencia {printf("	FIN\n");};
 	
 sentencia:
@@ -186,7 +186,7 @@ sentencia:
 	|asig {printf("	Sentencia es asig\n");}
 	|iteracion {printf("	Sentencia es Iteracion\n");}
 	|salida {printf("	Sentencia es salida\n");}
-	|maximo {printf("	Sentencia es maximo\n");}
+	//|maximo {printf("	Sentencia es maximo\n");}
 	|decision {printf("	Sentencia es decision\n");}
 	|entrada {printf("	Sentencia es entrada\n");}
 	|COMENTARIO;
@@ -285,7 +285,7 @@ comparador:
 	|DISTINTO {printf("	Comparador disntinto\n");};
 	
 bloque:
-	LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
+	 LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
 
 maximo:
 	MAX PAR_I lista_factores PAR_F {printf("	Definicion del maximo\n");};
@@ -295,14 +295,17 @@ lista_factores:
 	|expresion {printf("	La lista puede ser un terminon\n");};
 
 decision:
-	 IF PAR_I condicion PAR_F bloque {printf("	Definicion de IF con bloque\n");}
-	|IF PAR_I condicion PAR_F bloque ELSE bloque{printf("	Definicion de IF con ELSE con bloques\n");}
-	|IF PAR_I condicion PAR_F sentencia {printf("	IF CON una sola sentencia\n");}	
-	|IF PAR_I condicion PAR_F sentencia ELSE sentencia{printf("	Definicion de IF con ELSE de una sentencia\n");}
-	|IF PAR_I condicion PAR_F sentencia ELSE bloque{printf("	Definicion de IF con ELSE donde if tiene una sola sentencia\n");}
-	|IF PAR_I condicion PAR_F bloque ELSE sentencia{printf("	Definicion de IF con ELSE donde else tiene una sola sentencia\n");};
-	
-	 
+	 IF PAR_I condicion PAR_F bloque ELSE bloque{printf("	Definicion de IF con bloque\n");}	
+	|IF PAR_I condicion PAR_F sentencia ELSE bloque{printf("	Definicion de IF con bloque\n");}
+	|IF PAR_I condicion PAR_F sentencia ELSE sentencia{printf("	Definicion de IF con bloque\n");}
+	|IF PAR_I condicion PAR_F bloque ELSE sentencia{printf("	Definicion de IF con bloque\n");}
+	;
+/*
+bloque_else:
+	 ELSE bloque {printf("	Else con sentencias\n");}
+	|ELSE sentencia {printf("	Else con una sola sentencia\n");}
+	//|{printf("	Else vacio\n");}*/
+	;
 %%	
 /*
 int yylex(void)
