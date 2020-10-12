@@ -1,10 +1,14 @@
 c:\GnuWin32\GnuWin32\bin\flex asd.l
+c:\GnuWin32\GnuWin32\bin\bison -dyv sintactico.y
 pause
-c:\MinGW\bin\gcc.exe lex.yy.c -o TPFinal.exe
+c:\MinGW\bin\gcc.exe lex.yy.c y.tab.c -o compilador.exe
 pause
 pause
-TPFinal.exe programa.txt
+compilador.exe programa.txt
 
 del lex.yy.c
-del TPFinal.exe
+del compilador.exe
+del y.tab.c
+del y.tab.h
+del y.output
 pause
