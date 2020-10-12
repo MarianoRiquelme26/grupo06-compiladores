@@ -54,7 +54,7 @@ void listaVaciar(t_lista* pl,t_info* dat)
 	strcpy(lineaID,"");
 	strcpy(lineaCTE,"");
     t_nodo_lista* elim;
-	pt=fopen("MatrizDeSimbolos.txt","wt");
+	pt=fopen("ts.txt","wt");
     if(!pt)
     {
         puts("erro al intentar abrir algun archivo");
@@ -177,12 +177,12 @@ int insertarLista(t_lista* pl,t_info* dat)
 %%
 programa :
 	 programa sentencia {printf("	FIN programa\n");}
-	|sentencia {printf("	FIN\n");};
+	|sentencia {printf("	FIN sentencia\n");};
 	
 sentencia:
 	 expresion {printf("	Sentencia es expresion\n");}
 	|bloque_declaracion {printf("	Sentencia es bloque_declaracion\n");}
-	|asig {printf("	Sentencia es asig\n");}
+	|asig {printf("	Sentencia es asignacion\n");}
 	|iteracion {printf("	Sentencia es Iteracion\n");}
 	|salida {printf("	Sentencia es salida\n");}
 	|decision {printf("	Sentencia es decision\n");}
@@ -191,20 +191,20 @@ sentencia:
 
 
 bloque_declaracion:
-	 DIM declaracionesvar AS declaraciontipo {printf("	Defincion bloque declaracion\n");};
+	 DIM declaracionesvar AS declaraciontipo {printf("	Bloque declaracion\n");};
 	 
 declaracionesvar:
-	 MENOR lista_var MAYOR {printf("	Declaracion de variables\n");};
+	 MENOR lista_var MAYOR {printf("	Declaraciones variables\n");};
 	 
 lista_var: 
-	 lista_var SEPARADOR ID {printf("	Conjunto de variables\n");
+	 lista_var SEPARADOR ID {
 	 strcpy(dat.token,"ID");
 		strcpy(dat.lexema,yylval.stringValue);
 		if(!listaBuscar(&lista1,&dat,comp)){
 			insertarLista(&lista1,&dat);
 			contadorLetrastID += strlen(yylval.stringValue)+1;
 		}}
-	|ID {printf("	Una sola variable\n");
+	|ID {
 		strcpy(dat.token,"ID");
 		strcpy(dat.lexema,yylval.stringValue);
 		if(!listaBuscar(&lista1,&dat,comp)){
@@ -214,11 +214,11 @@ lista_var:
 	;
 
 declaraciontipo:
-	 MENOR tipo_dato_lista MAYOR {printf("	Declaracion de tipo");};
+	 MENOR tipo_dato_lista MAYOR {printf("	Declaracion de tipo\n");};
 	 
 tipo_dato_lista:
-	 tipo_dato_lista SEPARADOR tipo_dato  {printf("	Declaraciones de tipos");}
-	|tipo_dato {printf("	Declaracion de tipo");};
+	 tipo_dato_lista SEPARADOR tipo_dato 
+	|tipo_dato ;
 
 tipo_dato:
 	 INTEGER  {printf("	Tipo Integer\n");}
@@ -227,7 +227,7 @@ tipo_dato:
 
 
 asig:
-	ID  ASIG expresion FIN_SENT{printf("	ID=Expresion es Asignacion: %s\n",yylval.stringValue);
+	ID  ASIG expresion FIN_SENT{printf("	Definicion de asignacion\n");
 	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -240,13 +240,13 @@ asig:
 	
 expresion:
 	termino {printf("	Termino es Expresion\n");}
-	|expresion OP_SUM termino {printf("	Expresion+Termino es Expresion\n");}
-	|expresion RES termino {printf("	Expresion-Termino es Expresion\n");};
+	|expresion OP_SUM termino {printf("	Expresion + Termino es Expresion\n");}
+	|expresion RES termino {printf("	Expresion - Termino es Expresion\n");};
 	
 termino:
 	factor {printf("	Factor es Termino\n");}
-	|termino  OP_MUL factor {printf("	Termino*Factor es Termino\n");}
-	|termino  DIV factor {printf("	Termino/Factor es Termino\n");};
+	|termino  OP_MUL factor {printf("	Termino * Factor es Termino\n");}
+	|termino  DIV factor {printf("	Termino / Factor es Termino\n");};
 factor:
 	ID {printf("	ID es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"ID");
@@ -255,47 +255,47 @@ factor:
 		insertarLista(&lista1,&dat);
 		contadorLetrastID += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_ENT {printf("	CTE Entera es Factor\n");
+	|CTE_ENT {printf("	CTE Entera es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_REAL {printf("	CTE Real es Factor\n");
+	|CTE_REAL {printf("	CTE Real es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_HEX {printf("	CTE Hexa es Factor\n");
+	|CTE_HEX {printf("	CTE Hexadecimal es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_OC {printf("	CTE Octal es Factor\n");
+	|CTE_OC {printf("	CTE Octal es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_BIN {printf("	CTE Binaria es Factor\n");
+	|CTE_BIN {printf("	CTE Binaria es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|maximo {printf("	maximo es es Factor\n");}
-	|PAR_I expresion PAR_F {printf("	Expresion ente parentesis es Factor\n");};
+	|maximo {printf("	Maximo es Factor\n");}
+	|PAR_I expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");};
 
 salida:
-	 PUT TEXT_W FIN_SENT {printf("	Sentencia de salida por texto\n");}
-	|PUT ID FIN_SENT {printf("	Sentencia de salida de variable\n");};
+	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");}
+	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");};
 	 
 entrada:
 	 GET ID	FIN_SENT {printf("	Sentencia de entrada\n");};
@@ -305,9 +305,9 @@ iteracion:
 	|WHILE PAR_I condicion PAR_F sentencia {printf("	Definicion de iteracion con una sentencia\n");};
 
 condicion:
-	 comparacion AND comparacion {printf("	Comparacion True y Comparacion TRUE\n");}
-	|comparacion OR comparacion {printf("	Comparacion True o Comparacion TRUE\n");} 
-	|comparacion {printf("	Comparacion unica\n");} 
+	 comparacion AND comparacion {printf("	Comparacion con AND\n");}
+	|comparacion OR comparacion {printf("	Comparacion con OR\n");} 
+	|comparacion {printf("	Comparacion simple\n");} 
 	|NOT comparacion {printf("	Comparacion negada\n");} ;
 
 comparacion:
@@ -320,41 +320,41 @@ comparador:
 	|MENOR {printf("	Comparador menor\n");}
 	|MAYOR_IGUAL {printf("	Comparador mayor igual\n");}
 	|MENOR_IGUAL {printf("	Comparador menor igual\n");}
-	|DISTINTO {printf("	Comparador disntinto\n");};
+	|DISTINTO {printf("	Comparador distinto\n");};
 	
 bloque:
 	 LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
 	 
 bloque_anidado:
-	 LLAVE_I decision_IF LLAVE_F {printf("	Bloque de codigo\n");};
+	 LLAVE_I decision_IF LLAVE_F {printf("	Bloque de codigo anidado\n");};
 
 maximo:
 	MAX PAR_I lista_factores PAR_F {printf("	Definicion del maximo\n");};
 
 lista_factores:
-	 lista_factores SEPARADOR expresion {printf("	Definicion de la lista de valroes\n");}
-	|expresion {printf("	La lista puede ser un terminon\n");};
+	 lista_factores SEPARADOR expresion {printf("	Definicion de la lista de valores\n");}
+	|expresion;
 
 decision_IF:
 	 IF PAR_I condicion PAR_F bloque {printf("	Definicion de IF con bloque\n");}	
-	|IF PAR_I condicion PAR_F sentencia {printf("	Definicion de IF con bloque\n");}
-	|IF PAR_I condicion PAR_F bloque_anidado {printf("	Definicion de IF con bloque\n");}
+	|IF PAR_I condicion PAR_F sentencia {printf("	Definicion de IF con sentencia\n");}
+	|IF PAR_I condicion PAR_F bloque_anidado {printf("	Definicion de IF con bloque anidado\n");}
 	;
 decision_else:
-	 ELSE bloque {printf("	Definicion de IF con bloque\n");}
-	|ELSE sentencia {printf("	Definicion de IF con bloque\n");}
-	|ELSE bloque_anidado {printf("	Definicion de IF con bloque\n");}
+	 ELSE bloque {printf("	Definicion de ELSE con bloque\n");}
+	|ELSE sentencia {printf("	Definicion de ELSE con sentencia\n");}
+	|ELSE bloque_anidado {printf("	Definicion de ELSE con bloque anidado\n");}
 	;
 decision:
-	decision_IF decision_else {printf("	Definicion de IF con bloque\n");}
-	|decision_IF sentencia {printf("	Definicion de IF con bloque\n");}
+	decision_IF decision_else {printf("	Definicion de IF ELSE\n");}
+	|decision_IF sentencia {printf("	Definicion de IF\n");}
 	;
 	
 %%	
 
 int main (int argc,char *argv[]){
 
- //creo la tabla de simbolos
+ //Creo la tabla de simbolos
  listaCrear(&lista1);
 	
  if ((yyin=fopen(argv[1],"rt"))==NULL)
@@ -365,7 +365,7 @@ int main (int argc,char *argv[]){
 	yyparse();
  }
  fclose(yyin);
- //Genero la tabla de simbolos
+ //Cargo la tabla de simbolos
  listaVaciar(&lista1,&dat);
  return 0;
 }
