@@ -7,7 +7,6 @@ int yystopparser=0;
 FILE *yyin;
 int yyerror();
 int yylex();
-//int yylval;
 char *yyltext;
 
 
@@ -186,14 +185,10 @@ sentencia:
 	|asig {printf("	Sentencia es asig\n");}
 	|iteracion {printf("	Sentencia es Iteracion\n");}
 	|salida {printf("	Sentencia es salida\n");}
-	//|maximo {printf("	Sentencia es maximo\n");}
 	|decision {printf("	Sentencia es decision\n");}
 	|entrada {printf("	Sentencia es entrada\n");}
 	|COMENTARIO;
 
-//bloque_declaracion:
-	 //bloque_declaracion bloque_declaracion {printf("	Multiples bloque_declaracion\n");}|
-	// bloque_declaracion {printf("	bloque_declaracion\n");};
 
 bloque_declaracion:
 	 DIM declaracionesvar AS declaraciontipo {printf("	Defincion bloque declaracion\n");};
@@ -202,8 +197,21 @@ declaracionesvar:
 	 MENOR lista_var MAYOR {printf("	Declaracion de variables\n");};
 	 
 lista_var: 
-	 lista_var SEPARADOR ID {printf("	Conjunto de variables\n");}
-	|ID {printf("	Una sola variable\n");};
+	 lista_var SEPARADOR ID {printf("	Conjunto de variables\n");
+	 strcpy(dat.token,"ID");
+		strcpy(dat.lexema,yylval.stringValue);
+		if(!listaBuscar(&lista1,&dat,comp)){
+			insertarLista(&lista1,&dat);
+			contadorLetrastID += strlen(yylval.stringValue)+1;
+		}}
+	|ID {printf("	Una sola variable\n");
+		strcpy(dat.token,"ID");
+		strcpy(dat.lexema,yylval.stringValue);
+		if(!listaBuscar(&lista1,&dat,comp)){
+			insertarLista(&lista1,&dat);
+			contadorLetrastID += strlen(yylval.stringValue)+1;
+		}}
+	;
 
 declaraciontipo:
 	 MENOR tipo_dato_lista MAYOR {printf("	Declaracion de tipo");};
@@ -220,13 +228,13 @@ tipo_dato:
 
 asig:
 	ID  ASIG expresion FIN_SENT{printf("	ID=Expresion es Asignacion: %s\n",yylval.stringValue);
-	/*strcpy(dat.token,"ID");
+	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastID += strlen(yylval.stringValue)+1;
 	}
-	*/
+	
 	
 	};
 	
@@ -247,11 +255,41 @@ factor:
 		insertarLista(&lista1,&dat);
 		contadorLetrastID += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_ENT {printf("	CTE Entera es Factor\n");}
-	|CTE_REAL {printf("	CTE Real es Factor\n");}
-	|CTE_HEX {printf("	CTE Hexa es Factor\n");}
-	|CTE_OC {printf("	CTE Octal es Factor\n");}
-	|CTE_BIN {printf("	CTE Binaria es Factor\n");}
+	|CTE_ENT {printf("	CTE Entera es Factor\n");
+	strcpy(dat.token,"CTE");
+	strcpy(dat.lexema,yylval.stringValue);
+	if(!listaBuscar(&lista1,&dat,comp)){
+		insertarLista(&lista1,&dat);
+		contadorLetrastCT += strlen(yylval.stringValue)+1;
+	}}
+	|CTE_REAL {printf("	CTE Real es Factor\n");
+	strcpy(dat.token,"CTE");
+	strcpy(dat.lexema,yylval.stringValue);
+	if(!listaBuscar(&lista1,&dat,comp)){
+		insertarLista(&lista1,&dat);
+		contadorLetrastCT += strlen(yylval.stringValue)+1;
+	}}
+	|CTE_HEX {printf("	CTE Hexa es Factor\n");
+	strcpy(dat.token,"CTE");
+	strcpy(dat.lexema,yylval.stringValue);
+	if(!listaBuscar(&lista1,&dat,comp)){
+		insertarLista(&lista1,&dat);
+		contadorLetrastCT += strlen(yylval.stringValue)+1;
+	}}
+	|CTE_OC {printf("	CTE Octal es Factor\n");
+	strcpy(dat.token,"CTE");
+	strcpy(dat.lexema,yylval.stringValue);
+	if(!listaBuscar(&lista1,&dat,comp)){
+		insertarLista(&lista1,&dat);
+		contadorLetrastCT += strlen(yylval.stringValue)+1;
+	}}
+	|CTE_BIN {printf("	CTE Binaria es Factor\n");
+	strcpy(dat.token,"CTE");
+	strcpy(dat.lexema,yylval.stringValue);
+	if(!listaBuscar(&lista1,&dat,comp)){
+		insertarLista(&lista1,&dat);
+		contadorLetrastCT += strlen(yylval.stringValue)+1;
+	}}
 	|maximo {printf("	maximo es es Factor\n");}
 	|PAR_I expresion PAR_F {printf("	Expresion ente parentesis es Factor\n");};
 
@@ -311,18 +349,9 @@ decision:
 	decision_IF decision_else {printf("	Definicion de IF con bloque\n");}
 	|decision_IF sentencia {printf("	Definicion de IF con bloque\n");}
 	;
-/*
-bloque_else:
-	 ELSE bloque {printf("	Else con sentencias\n");}
-	|ELSE sentencia {printf("	Else con una sola sentencia\n");}
-	//|{printf("	Else vacio\n");}*/
 	
 %%	
-/*
-int yylex(void)
-{
-	return 0;
-}*/
+
 int main (int argc,char *argv[]){
 
  //creo la tabla de simbolos

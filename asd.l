@@ -103,13 +103,7 @@ RES				[-]
 {STRING}		{printf("String: %s\n",yytext);return STRING;}
 {ID}			{
 					printf("Identificador: %s\n",yytext);
-					 yylval.stringValue = strdup(yytext); 
-					/*strcpy(dat.token,"ID");
-					strcpy(dat.lexema,yytext);
-					if(!listaBuscar(&lista1,&dat,comp)){
-						insertarLista(&lista1,&dat);
-						contadorLetrastID += strlen(yytext)+1;
-					}*/
+					yylval.stringValue = strdup(yytext); 
 					return ID;
 				}
 {FIN_SENT}		{printf("Fin sentencia: %s\n",yytext);return FIN_SENT;}
@@ -118,14 +112,7 @@ RES				[-]
 					if(atoi(yytext)<=65535)
 					{
 						printf("Constante entera: %s\n",yytext);
-						/*
-						strcpy(dat.token,"CTE");
-						strcpy(dat.lexema,yytext);
-						printf("Constante entera: %s\n",dat.lexema);
-						if(!listaBuscar(&lista1,&dat,comp)){
-							insertarLista(&lista1,&dat);
-							contadorLetrastCT += strlen(yytext)+1;
-						}*/
+						yylval.stringValue = strdup(yytext); 
 					return CTE_ENT;
 					}
 					else {
@@ -137,14 +124,7 @@ RES				[-]
 					if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F)
 					{
 						printf("Constante en real: %s\n",yytext);
-						/*
-						strcpy(dat.token,"CTE");
-						strcpy(dat.lexema,yytext);
-
-						if(!listaBuscar(&lista1,&dat,comp)){
-							insertarLista(&lista1,&dat);
-							contadorLetrastCT += strlen(yytext)+1;
-						}*/
+						yylval.stringValue = strdup(yytext); 
 					return CTE_REAL;
 					}
 					else {
@@ -155,33 +135,18 @@ RES				[-]
 
 {CTE_HEX}		{
 					printf("Constante en hexa: %s\n",yytext);
-					/*strcpy(dat.token,"CTE");
-					strcpy(dat.lexema,yytext);
-					if(!listaBuscar(&lista1,&dat,comp)){
-						insertarLista(&lista1,&dat);
-						contadorLetrastCT += strlen(yytext)+1;
-					}*/
+					yylval.stringValue = strdup(yytext); 
 					return CTE_HEX;
 				}	
 {CTE_OC}		{
 					printf("Constante en octal: %s\n",yytext);
-					/*strcpy(dat.token,"CTE");
-					strcpy(dat.lexema,yytext);
-					if(!listaBuscar(&lista1,&dat,comp)){
-						insertarLista(&lista1,&dat);
-						contadorLetrastCT += strlen(yytext)+1;
-					}*/
+					yylval.stringValue = strdup(yytext); 
 					return CTE_OC;
 				}	
 				
 {CTE_BIN}		{
-					printf("Constante en binario: %s\n",yytext);/*
-					strcpy(dat.token,"CTE");
-					strcpy(dat.lexema,yytext);
-					if(!listaBuscar(&lista1,&dat,comp)){
-						insertarLista(&lista1,&dat);
-						contadorLetrastCT += strlen(yytext)+1;
-					}*/
+					printf("Constante en binario: %s\n",yytext);
+					yylval.stringValue = strdup(yytext); 
 					return CTE_BIN;
 				}
 				
