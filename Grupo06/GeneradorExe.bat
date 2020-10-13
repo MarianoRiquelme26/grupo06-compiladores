@@ -7,7 +7,6 @@ pause
 Primera.exe prueba.txt
 
 del lex.yy.c
-del Primera.exe
 del y.tab.c
 del y.tab.h
 del y.output
