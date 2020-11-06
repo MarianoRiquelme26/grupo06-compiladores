@@ -118,6 +118,26 @@ int insertarLista(t_lista* pl,t_info* dat)
     return 1;
 }
 
+//DECLARACION COSAS PARA TERCETOS
+
+  /* Struct para tercetos y un par de funciones para que funcionen bien*/
+  	typedef struct 
+  	{	
+  		int numeroTerceto;
+  		char * primerElemento; //primer elemento del terceto, duh
+  		char * elementoIzquierda; //segundo elemento del terceto
+  		char * elementoDerecha; //tercer elemento del terceto.
+  	}terceto;
+ terceto vectorTercetos[CANT_TERCETOS];
+void reverse(char* str, int len);
+ int contadorTercetos = 0; //cada vez que metemos un tercetos aumentamos en uno este contadorcito
+ char* crearIndice(int);//recibe un numero entero y lo convierte en un indice, por ejemplo le mando 12 y guarda en el char * "[12]"
+ int crearTerceto (char *, char *,char *); //le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
+ 										   //la funcion tambien tiene que guardar el terceto creado en el vectorTercetos.
+ 										   //La posicion en el vector se lo da contadorTercetos. Variable que debe aumentar en 1.
+ int crearTercetoNumero(char*, char *, char *, int);//Parecida a la anterior pero crea un terceto con un numero en especifico.
+ 											       //No aumenta en 1 contadorTercetos.
+ 												   //La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
 
 ///////FIN DE PRIMITVAS/////////////
 
@@ -176,7 +196,8 @@ int insertarLista(t_lista* pl,t_info* dat)
 
 %%
 programa :
-	 programa sentencia {printf("	FIN programa\n");}
+	 programa sentencia {printf("	FIN programa\n");
+						guardarTercetosEnArchivo("tercetos.txt");}
 	|sentencia {printf("	FIN sentencia\n");};
 	
 sentencia:
@@ -227,7 +248,13 @@ tipo_dato:
 
 
 asig:
-	ID  ASIG expresion FIN_SENT{printf("	Definicion de asignacion\n");
+	ID  ASIG {cadenaAsigString = malloc(sizeof(char) * strlen($<str_val>1));
+              parsearCadena($<str_val>1,cadenaAsigString);
+              ultimoTipoLeido = getTipoPorID(cadenaAsigString);
+              tipoDatoActual = ultimoTipoLeido;}
+	expresion {asigPointer = crearTerceto("=",cadenaAsigString,crearIndice(expresionPointer));} 
+	FIN_SENT{printf("	Definicion de asignacion\n");
+	
 	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -239,16 +266,24 @@ asig:
 	};
 	
 expresion:
-	termino {printf("	Termino es Expresion\n");}
-	|expresion OP_SUM termino {printf("	Expresion + Termino es Expresion\n");}
-	|expresion RES termino {printf("	Expresion - Termino es Expresion\n");};
+	termino {printf("	Termino es Expresion\n");
+	 expresionPointer = terminoPointer;}
+	|expresion OP_SUM termino {printf("	Expresion + Termino es Expresion\n");
+	 expresionPointer = crearTerceto("+",crearIndice(expresionPointer),crearIndice(terminoPointer));}
+	|expresion RES termino {printf("	Expresion - Termino es Expresion\n");
+	 expresionPointer = crearTerceto("-",crearIndice(expresionPointer),crearIndice(terminoPointer));};
 	
 termino:
-	factor {printf("	Factor es Termino\n");}
-	|termino  OP_MUL factor {printf("	Termino * Factor es Termino\n");}
-	|termino  DIV factor {printf("	Termino / Factor es Termino\n");};
+	factor {printf("	Factor es Termino\n");
+	 terminoPointer = factorPointer;}
+	|termino  OP_MUL factor {printf("	Termino * Factor es Termino\n");
+	 terminoPointer = crearTerceto("*",crearIndice(terminoPointer),crearIndice(factorPointer));}
+	|termino  DIV factor {printf("	Termino / Factor es Termino\n");
+	 terminoPointer = crearTerceto("/",crearIndice(terminoPointer),crearIndice(factorPointer));};
+
 factor:
-	ID {printf("	ID es Factor: %s\n",yylval.stringValue);
+	ID {printf("	ID es Factor: %s\n",yylval.stringValue)
+	factorPointer=crearTerceto($1,"","");};
 	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -256,6 +291,9 @@ factor:
 		contadorLetrastID += strlen(yylval.stringValue)+1;
 	}}
 	|CTE_ENT {printf("	CTE Entera es Factor: %s\n",yylval.stringValue);
+	char *cadena = (char *)malloc (sizeof (int));
+                      itoa($<intval>1,cadena,10);
+                      factorPointer=crearTerceto(cadena,"","");
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -263,6 +301,9 @@ factor:
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
 	|CTE_REAL {printf("	CTE Real es Factor: %s\n",yylval.stringValue);
+	char*cadena = (char *)malloc(sizeof(char)*12);
+                       ftoa($<val>1,cadena,2);
+                       factorPointer=crearTerceto(cadena,"","");
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -291,14 +332,22 @@ factor:
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
 	|maximo {printf("	Maximo es Factor\n");}
-	|PAR_I expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");};
+	|PAR_I { apilar(&pilaOperaciones,expresionPointer);
+             apilar(&pilaTerminos,terminoPointer);}
+	expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");
+	factorPointer = expresionPointer;
+    expresionPointer = desapilar(&pilaOperaciones);
+    terminoPointer = desapilar(&pilaTerminos);};
 
 salida:
-	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");}
-	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");};
+	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");
+						  crearTerceto("PUT",$2,"");}
+	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");
+					  crearTerceto("PUT",$2,"");};
 	 
 entrada:
-	 GET ID	FIN_SENT {printf("	Sentencia de entrada\n");};
+	 GET ID	FIN_SENT {printf("	Sentencia de entrada\n");
+					  crearTerceto("GET",$2,"");};
 	 
 iteracion:
 	 WHILE PAR_I condicion PAR_F bloque {printf("	Definicion de iteracion con bloque\n");}
@@ -375,4 +424,55 @@ int yyerror(void)
 	  system("Pause");
           exit (1);
 	}
+	
+//FUNCIONES DE TERCETOS
+
+char* crearIndice(int num){
+
+char * resultado = (char*)malloc(sizeof(char)*7);
+char numeroTexto [4];
+
+	strcpy(resultado,"[");
+	itoa(num,numeroTexto,10);
+    strcat(resultado,numeroTexto);
+	strcat(resultado,"]");
+    return resultado;
+}
+
+int crearTerceto (char * primero, char *izquierda,char *derecha){
+//le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
+//la funcion tambien tiene que guardar el terceto creado en el vectorTercetos.
+//La posicion en el vector se lo da contadorTercetos. Variable que debe aumentar en 1.
+
+  terceto nuevo;
+  nuevo.primerElemento = malloc(sizeof(char)*strlen(primero)+1);
+  strcpy(nuevo.primerElemento,primero);
+  nuevo.elementoIzquierda = malloc(sizeof(char)*strlen(izquierda)+1);
+  strcpy(nuevo.elementoIzquierda,izquierda);
+  nuevo.elementoDerecha = malloc(sizeof(char)*strlen(derecha)+1);
+  strcpy(nuevo.elementoDerecha,derecha);
+  nuevo.numeroTerceto = contadorTercetos;
+  //printf("%d %s %s %s\n",nuevo.numeroTerceto,nuevo.primerElemento,nuevo.elementoIzquierda,nuevo.elementoDerecha);
+  vectorTercetos[contadorTercetos] = nuevo;
+  contadorTercetos++;
+  return nuevo.numeroTerceto;
+} 
+
+int crearTercetoNumero(char* primero, char * izquierda, char *derecha, int numero){
+  terceto nuevo;
+  nuevo.primerElemento = malloc(sizeof(char)*strlen(primero)+1);
+  strcpy(nuevo.primerElemento,primero);
+  nuevo.elementoIzquierda = malloc(sizeof(char)*strlen(izquierda)+1);
+  strcpy(nuevo.elementoIzquierda,izquierda);
+  nuevo.elementoDerecha = malloc(sizeof(char)*strlen(derecha)+1);
+  strcpy(nuevo.elementoDerecha,derecha);
+  nuevo.numeroTerceto = numero;
+  vectorTercetos[numero] = nuevo;
+  return nuevo.numeroTerceto;
+}//Parecida a la anterior pero crea un terceto con un numero en especifico.
+                             //No aumenta en 1 contadorTercetos.
+                           //La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
+
+
+
 
