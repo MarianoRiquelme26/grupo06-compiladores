@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "y.tab.h"
+
 int yystopparser=0;
 FILE *yyin;
 int yyerror();
@@ -16,6 +17,7 @@ typedef struct
     char token[4];
     char lexema[10];
 } t_info;
+
 // DEFINCION DE LA ESTRUCTURA DE LA LISTA //
 typedef struct s_nodo_lista
 {
@@ -128,16 +130,29 @@ int insertarLista(t_lista* pl,t_info* dat)
   		char * elementoIzquierda; //segundo elemento del terceto
   		char * elementoDerecha; //tercer elemento del terceto.
   	}terceto;
- terceto vectorTercetos[CANT_TERCETOS];
+	
+terceto vectorTercetos[1000];
+ 
 void reverse(char* str, int len);
- int contadorTercetos = 0; //cada vez que metemos un tercetos aumentamos en uno este contadorcito
- char* crearIndice(int);//recibe un numero entero y lo convierte en un indice, por ejemplo le mando 12 y guarda en el char * "[12]"
- int crearTerceto (char *, char *,char *); //le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
+
+int contadorTercetos = 0; //cada vez que metemos un tercetos aumentamos en uno este contadorcito
+
+char* crearIndice(int);//recibe un numero entero y lo convierte en un indice, por ejemplo le mando 12 y guarda en el char * "[12]"
+
+int crearTerceto (char *, char *,char *); //le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
  										   //la funcion tambien tiene que guardar el terceto creado en el vectorTercetos.
  										   //La posicion en el vector se lo da contadorTercetos. Variable que debe aumentar en 1.
- int crearTercetoNumero(char*, char *, char *, int);//Parecida a la anterior pero crea un terceto con un numero en especifico.
+
+int crearTercetoNumero(char*, char *, char *, int);//Parecida a la anterior pero crea un terceto con un numero en especifico.
  											       //No aumenta en 1 contadorTercetos.
  												   //La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
+int itoaBienPiola(int x, char str[], int d); //recibe un numero y lo convierte a string cosa de que podamos hacer crearTerceto("=","id",itoa(cte));
+
+void ftoa(float n, char* res, int afterpoint); //lo mismo que arriba perri
+
+void guardarTercetosEnArchivo(char *); //guarda los tercetos en un archivo con el nombre que nosotros le pasemos (creo que en un binaro queda mejor)
+
+void parsearCadena (char * origen, char * destino);//porque no me voy a poner a ver como anda bison									
 
 ///////FIN DE PRIMITVAS/////////////
 
@@ -196,9 +211,8 @@ void reverse(char* str, int len);
 
 %%
 programa :
-	 programa sentencia {printf("	FIN programa\n");
-						guardarTercetosEnArchivo("tercetos.txt");}
-	|sentencia {printf("	FIN sentencia\n");};
+	 programa sentencia {guardarTercetosEnArchivo("tercetos.txt") ; printf("	FIN programa\n");}
+	|sentencia {guardarTercetosEnArchivo("tercetos.txt") ; printf("	FIN sentencia\n");};
 	
 sentencia:
 	 expresion {printf("	Sentencia es expresion\n");}
@@ -282,8 +296,8 @@ termino:
 	 terminoPointer = crearTerceto("/",crearIndice(terminoPointer),crearIndice(factorPointer));};
 
 factor:
-	ID {printf("	ID es Factor: %s\n",yylval.stringValue)
-	factorPointer=crearTerceto($1,"","");};
+	ID {printf("	ID es Factor: %s\n",yylval.stringValue);
+	factorPointer=crearTerceto(yylval.stringValue,"","");
 	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -341,13 +355,13 @@ factor:
 
 salida:
 	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");
-						  crearTerceto("PUT",$2,"");}
+						  crearTerceto("PUT",yylval.stringValue,"");}
 	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");
-					  crearTerceto("PUT",$2,"");};
+					  crearTerceto("PUT",yylval.stringValue,"");};
 	 
 entrada:
 	 GET ID	FIN_SENT {printf("	Sentencia de entrada\n");
-					  crearTerceto("GET",$2,"");};
+					  crearTerceto("GET",yylval.stringValue,"");};
 	 
 iteracion:
 	 WHILE PAR_I condicion PAR_F bloque {printf("	Definicion de iteracion con bloque\n");}
@@ -469,10 +483,44 @@ int crearTercetoNumero(char* primero, char * izquierda, char *derecha, int numer
   nuevo.numeroTerceto = numero;
   vectorTercetos[numero] = nuevo;
   return nuevo.numeroTerceto;
-}//Parecida a la anterior pero crea un terceto con un numero en especifico.
-                             //No aumenta en 1 contadorTercetos.
-                           //La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
+}
+//Parecida a la anterior pero crea un terceto con un numero en especifico.
+//No aumenta en 1 contadorTercetos.
+//La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
 
+void parsearCadena (char * origen, char * destino){
+  int i=0,contDestino=0;
+  while(origen[i]!=' ' && origen[i]!=':'){
+    destino[i]=origen[i];
+    i++;
+  }
+  destino[i]='\0';
+}
 
+int getTipoPorID(char* name)
+{
+   int i=0;
+   while(i<=finDeTabla){
+     if(strcmp(tablaSimbolo[i].nombre,name) == 0){
+       return tablaSimbolo[i].tipoDato;
+     }
+     i++;
+   }
+
+   yyerror("Error: la variable no se encontraba");
+   return -1;
+}
+
+void guardarTercetosEnArchivo(char *nombreArchivo){//guarda los tercetos en un archivo con el nombre que nosotros le pasemos (creo que en un binaro queda mejor)
+  int i;
+  FILE * fp;
+  fp = fopen(nombreArchivo,"wt");
+  terceto aux;
+  for (i=0;i<contadorTercetos;i++){
+    aux = vectorTercetos[i];
+    fprintf(fp,"%d (%s,%s,%s) \n",aux.numeroTerceto,aux.primerElemento,aux.elementoIzquierda,aux.elementoDerecha);
+  }
+  fclose(fp);
+}
 
 
