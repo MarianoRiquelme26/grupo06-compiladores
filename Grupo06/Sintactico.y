@@ -3,13 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "y.tab.h"
-
+#include "files_h/tercetos.h"
+#include "files_h/constantes.h"
+#include "files_h/ts.h"
+#include "files_h/pila.h"
 int yystopparser=0;
 FILE *yyin;
 int yyerror();
 int yylex();
 char *yyltext;
-
 
 // DEFICION DE ESTRUCTURA DE INFORMACION QUE VA CONTENER EL TOKEN Y LEXEMA //
 typedef struct
@@ -56,7 +58,7 @@ void listaVaciar(t_lista* pl,t_info* dat)
 	strcpy(lineaID,"");
 	strcpy(lineaCTE,"");
     t_nodo_lista* elim;
-	pt=fopen("ts.txt","wt");
+	pt=fopen("ts.txt","w");
     if(!pt)
     {
         puts("erro al intentar abrir algun archivo");
@@ -120,39 +122,61 @@ int insertarLista(t_lista* pl,t_info* dat)
     return 1;
 }
 
-//DECLARACION COSAS PARA TERCETOS
+//////////COMENZAMOS TERCETOS ///////////
 
-  /* Struct para tercetos y un par de funciones para que funcionen bien*/
-  	typedef struct 
-  	{	
-  		int numeroTerceto;
-  		char * primerElemento; //primer elemento del terceto, duh
-  		char * elementoIzquierda; //segundo elemento del terceto
-  		char * elementoDerecha; //tercer elemento del terceto.
-  	}terceto;
+	void insertarEnArrayDeclaracion(char *);
+	void validarDeclaracionTipoDato(char *);
+	char * negarComparador(char*);
+	char * obtenerNuevoNombreEtiqueta(char *);
+	void insertarEnArrayComparacionTipos(char *);
+	void insertarEnArrayComparacionTiposDirecto(char *);
+	void imprimirArrayComparacionTipos();
+	void compararTipos();
+	char * tipoConstanteConvertido(char*);
+	void insertarEnArrayTercetos(char *operador, char *operando1, char *operando2);
+	void crearTercetosDelArray();
+	void guardarTipoDato(char *);
+
+	// Pilas para resolver GCI
+	t_pila pila;
+	t_pila pila_condicion_doble;
+	//t_pila pila_inlist;
+	t_pila pilaDatos;
+	t_pila pilaTemporal;
+	//t_pila pilaDatosInversa;
+	char condicion[5];
+
+	// Para assembler
+	FILE * pfASM; // Final.asm
+	//t_pila pila;  // Pila saltos
+	//t_pila pVariables;  // Pila variables
+
+	void generarAssembler();
+	void generarEncabezado();
+	void generarDatos();
+	void generarCodigo();
+	void imprimirInstrucciones();
+	void generarFin();
+
+	// arrays
+	char * arrayDeclaraciones[100];
+	char * arrayTipoDato[100];
+	int longitud_arrayDeclaraciones = 0;
+	int longitud_arrayTipoDato = 0; // incrementos
+	char * arrayComparacionTipos[100];	// array para comparar tipos
+	int longitud_arrayComparacionTipos = 0; // incremento en el array arrayComparacionTipos
+	char tipoDato[100];
+	char ids[100];
+
+	// Auxiliar para manejar tercetos;
+	int indiceExpresion, indiceTermino, indiceFactor, indiceLongitud;
+	int indiceAux, indiceUltimo, indiceIzq, indiceDer, indiceComparador, indiceComparador1, indiceComparador2,
+	indiceId;
+	int indicePrincipioBloque;
+	char idAsignarStr[50];
 	
-terceto vectorTercetos[1000];
- 
-void reverse(char* str, int len);
-
-int contadorTercetos = 0; //cada vez que metemos un tercetos aumentamos en uno este contadorcito
-
-char* crearIndice(int);//recibe un numero entero y lo convierte en un indice, por ejemplo le mando 12 y guarda en el char * "[12]"
-
-int crearTerceto (char *, char *,char *); //le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
- 										   //la funcion tambien tiene que guardar el terceto creado en el vectorTercetos.
- 										   //La posicion en el vector se lo da contadorTercetos. Variable que debe aumentar en 1.
-
-int crearTercetoNumero(char*, char *, char *, int);//Parecida a la anterior pero crea un terceto con un numero en especifico.
- 											       //No aumenta en 1 contadorTercetos.
- 												   //La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
-int itoaBienPiola(int x, char str[], int d); //recibe un numero y lo convierte a string cosa de que podamos hacer crearTerceto("=","id",itoa(cte));
-
-void ftoa(float n, char* res, int afterpoint); //lo mismo que arriba perri
-
-void guardarTercetosEnArchivo(char *); //guarda los tercetos en un archivo con el nombre que nosotros le pasemos (creo que en un binaro queda mejor)
-
-void parsearCadena (char * origen, char * destino);//porque no me voy a poner a ver como anda bison									
+	int startEtiqueta = 0;
+	
 
 ///////FIN DE PRIMITVAS/////////////
 
@@ -211,134 +235,164 @@ void parsearCadena (char * origen, char * destino);//porque no me voy a poner a 
 
 %%
 programa :
-	 programa sentencia {guardarTercetosEnArchivo("tercetos.txt") ; printf("	FIN programa\n");}
-	|sentencia {guardarTercetosEnArchivo("tercetos.txt") ; printf("	FIN sentencia\n");};
+	 programa sentencia {
+		crear_pila(&pilaDatos);
+		crear_pila(&pilaTemporal);
+		printf("	FIN programa\n");}
+	|sentencia { 
+		crear_pila(&pilaDatos);
+		crear_pila(&pilaTemporal);
+		crearArchivoTS();
+		crearArchivoTercetosIntermedia();
+		printf("	FIN sentencia\n");};
 	
 sentencia:
 	 expresion {printf("	Sentencia es expresion\n");}
 	|bloque_declaracion {printf("	Sentencia es bloque_declaracion\n");}
 	|asig {printf("	Sentencia es asignacion\n");}
 	|iteracion {printf("	Sentencia es Iteracion\n");}
-	|salida {printf("	Sentencia es salida\n");}
+	|salida {crearArchivoTercetosIntermedia() ; printf("	Sentencia es salida\n");}
 	|decision {printf("	Sentencia es decision\n");}
 	|entrada {printf("	Sentencia es entrada\n");}
 	|COMENTARIO;
 
 
-bloque_declaracion:
-	 DIM declaracionesvar AS declaraciontipo {printf("	Bloque declaracion\n");};
-	 
-declaracionesvar:
-	 MENOR lista_var MAYOR {printf("	Declaraciones variables\n");};
-	 
-lista_var: 
-	 lista_var SEPARADOR ID {
-	 strcpy(dat.token,"ID");
-		strcpy(dat.lexema,yylval.stringValue);
-		if(!listaBuscar(&lista1,&dat,comp)){
-			insertarLista(&lista1,&dat);
-			contadorLetrastID += strlen(yylval.stringValue)+1;
-		}}
-	|ID {
-		strcpy(dat.token,"ID");
-		strcpy(dat.lexema,yylval.stringValue);
-		if(!listaBuscar(&lista1,&dat,comp)){
-			insertarLista(&lista1,&dat);
-			contadorLetrastID += strlen(yylval.stringValue)+1;
-		}}
-	;
+bloque_declaracion: DIM declaraciones;
+	
+declaraciones:
+declaracion | declaraciones declaracion;
 
-declaraciontipo:
-	 MENOR tipo_dato_lista MAYOR {printf("	Declaracion de tipo\n");};
-	 
-tipo_dato_lista:
-	 tipo_dato_lista SEPARADOR tipo_dato 
-	|tipo_dato ;
+declaracion:
+	MENOR NODO
+	{
+			while((pila_vacia(&pilaDatos) != PILA_VACIA ) && (pila_vacia(&pilaTemporal) != PILA_VACIA))
+			{
+				sacar_de_pila(&pilaTemporal, &tipoDato);
+				sacar_de_pila(&pilaDatos, &ids);
+				insertarEnArrayDeclaracion(ids);
+				if(strcmp(tipoDato, "STRING") == 0)
+				{
+					validarDeclaracionTipoDato("STRING");
+				}
+				else{
+						if(strcmp(tipoDato, "FLOAT") == 0)
+							{
+							validarDeclaracionTipoDato("FLOAT");
+							}
 
-tipo_dato:
-	 INTEGER  {printf("	Tipo Integer\n");}
-	|FLOAT  {printf("	Tipo Float\n");}
-	|STRING  {printf("	Tipo String\n");};
+						else{
+							validarDeclaracionTipoDato("INTEGER");
+								}
+				}
+			}
+  }
+  MAYOR;
+
+NODO:
+ID MAYOR AS MENOR TIPO_DATO
+{
+	poner_en_pila(&pilaDatos, yylval.stringValue);
+};
+NODO:
+	ID SEPARADOR NODO SEPARADOR TIPO_DATO
+	{
+		poner_en_pila(&pilaDatos, yylval.stringValue);
+	};
+
+TIPO_DATO:
+
+	STRING {
+	poner_en_pila(&pilaTemporal, "STRING");
+	}
+	|
+	INTEGER {
+	 poner_en_pila(&pilaTemporal, "INTEGER");
+
+	}
+	| FLOAT{
+		poner_en_pila(&pilaTemporal, "FLOAT");
+
+	};
 
 
 asig:
-	ID  ASIG {cadenaAsigString = malloc(sizeof(char) * strlen($<str_val>1));
-              parsearCadena($<str_val>1,cadenaAsigString);
-              ultimoTipoLeido = getTipoPorID(cadenaAsigString);
-              tipoDatoActual = ultimoTipoLeido;}
-	expresion {asigPointer = crearTerceto("=",cadenaAsigString,crearIndice(expresionPointer));} 
-	FIN_SENT{printf("	Definicion de asignacion\n");
-	
-	strcpy(dat.token,"ID");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastID += strlen(yylval.stringValue)+1;
-	}
-	
-	
+	lista_id expresion
+	{
+		printf("\t\tASIGNACION\n");
+		//compararTipos();
+		indiceAux = crearTerceto(idAsignarStr,"_","_");
+		crearTerceto("=",armarIndiceI(indiceAux),armarIndiceD(indiceExpresion));
+	};
+
+lista_id:
+	ID ASIG
+	{
+		//insertarEnArrayComparacionTipos(yylval.stringValue);
+		strcpy(idAsignarStr, yylval.stringValue);
 	};
 	
 expresion:
-	termino {printf("	Termino es Expresion\n");
-	 expresionPointer = terminoPointer;}
-	|expresion OP_SUM termino {printf("	Expresion + Termino es Expresion\n");
-	 expresionPointer = crearTerceto("+",crearIndice(expresionPointer),crearIndice(terminoPointer));}
-	|expresion RES termino {printf("	Expresion - Termino es Expresion\n");
-	 expresionPointer = crearTerceto("-",crearIndice(expresionPointer),crearIndice(terminoPointer));};
+	termino {indiceExpresion = indiceTermino; 
+	 printf("	Termino es Expresion\n");}
+	|expresion OP_SUM termino {indiceExpresion = crearTerceto("+",armarIndiceI(indiceExpresion),armarIndiceD(indiceTermino));
+	 printf("	Expresion + Termino es Expresion\n");}
+	|expresion RES termino {indiceExpresion = crearTerceto("-",armarIndiceI(indiceExpresion),armarIndiceD(indiceTermino));
+	 printf("	Expresion - Termino es Expresion\n");};
 	
 termino:
-	factor {printf("	Factor es Termino\n");
-	 terminoPointer = factorPointer;}
-	|termino  OP_MUL factor {printf("	Termino * Factor es Termino\n");
-	 terminoPointer = crearTerceto("*",crearIndice(terminoPointer),crearIndice(factorPointer));}
-	|termino  DIV factor {printf("	Termino / Factor es Termino\n");
-	 terminoPointer = crearTerceto("/",crearIndice(terminoPointer),crearIndice(factorPointer));};
+	factor {indiceTermino = indiceFactor; 
+	 printf("	Factor es Termino\n");}
+	|termino  OP_MUL factor {indiceTermino = crearTerceto("*",armarIndiceI(indiceTermino),armarIndiceD(indiceFactor)); 
+	 printf("	Termino * Factor es Termino\n");}
+	|termino  DIV factor {indiceTermino = crearTerceto("/",armarIndiceI(indiceTermino),armarIndiceD(indiceFactor));
+	 printf("	Termino / Factor es Termino\n");};
 
 factor:
-	ID {printf("	ID es Factor: %s\n",yylval.stringValue);
-	factorPointer=crearTerceto(yylval.stringValue,"","");
+	ID {indiceFactor = crearTerceto(yylval.stringValue,"_","_"); 
+	 printf("	ID es Factor: %s\n",yylval.stringValue);
+	//insertarEnArrayComparacionTipos(yylval.stringValue);
 	strcpy(dat.token,"ID");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastID += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_ENT {printf("	CTE Entera es Factor: %s\n",yylval.stringValue);
-	char *cadena = (char *)malloc (sizeof (int));
-                      itoa($<intval>1,cadena,10);
-                      factorPointer=crearTerceto(cadena,"","");
+	|CTE_ENT {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 printf("	CTE Entera es Factor: %s\n",yylval.stringValue);
+	 insertarEnArrayComparacionTipos(yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_REAL {printf("	CTE Real es Factor: %s\n",yylval.stringValue);
-	char*cadena = (char *)malloc(sizeof(char)*12);
-                       ftoa($<val>1,cadena,2);
-                       factorPointer=crearTerceto(cadena,"","");
+	|CTE_REAL {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 printf("	CTE Real es Factor: %s\n",yylval.stringValue);
+	 insertarEnArrayComparacionTipos(yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_HEX {printf("	CTE Hexadecimal es Factor: %s\n",yylval.stringValue);
+	|CTE_HEX {indiceFactor = crearTerceto(yylval.stringValue,"_","_");
+	 printf("	CTE Hexadecimal es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_OC {printf("	CTE Octal es Factor: %s\n",yylval.stringValue);
+	|CTE_OC {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 printf("	CTE Octal es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
 		insertarLista(&lista1,&dat);
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
-	|CTE_BIN {printf("	CTE Binaria es Factor: %s\n",yylval.stringValue);
+	|CTE_BIN {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 printf("	CTE Binaria es Factor: %s\n",yylval.stringValue);
 	strcpy(dat.token,"CTE");
 	strcpy(dat.lexema,yylval.stringValue);
 	if(!listaBuscar(&lista1,&dat,comp)){
@@ -346,51 +400,113 @@ factor:
 		contadorLetrastCT += strlen(yylval.stringValue)+1;
 	}}
 	|maximo {printf("	Maximo es Factor\n");}
-	|PAR_I { apilar(&pilaOperaciones,expresionPointer);
-             apilar(&pilaTerminos,terminoPointer);}
-	expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");
-	factorPointer = expresionPointer;
-    expresionPointer = desapilar(&pilaOperaciones);
-    terminoPointer = desapilar(&pilaTerminos);};
+	|PAR_I expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");};
 
 salida:
 	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");
-						  crearTerceto("PUT",yylval.stringValue,"");}
+	 indiceAux = crearTerceto(yylval.stringValue,"_","_");
+	 crearTerceto("PUT",armarIndiceI(indiceAux),"_");}
 	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");
-					  crearTerceto("PUT",yylval.stringValue,"");};
+	 indiceAux = crearTerceto(yylval.stringValue,"_","_");
+	 crearTerceto("PUT",armarIndiceI(indiceAux),"_");};
 	 
 entrada:
-	 GET ID	FIN_SENT {printf("	Sentencia de entrada\n");
-					  crearTerceto("GET",yylval.stringValue,"");};
+	 GET ID	{indiceAux = crearTerceto(yylval.stringValue,"_","_");
+	 crearTerceto("GET",armarIndiceI(indiceAux),"_");}
+	 FIN_SENT {printf("	Sentencia de entrada\n");};
 	 
 iteracion:
-	 WHILE PAR_I condicion PAR_F bloque {printf("	Definicion de iteracion con bloque\n");}
-	|WHILE PAR_I condicion PAR_F sentencia {printf("	Definicion de iteracion con una sentencia\n");};
+	 WHILE PAR_I condicion PAR_F bloque {	printf("\t\tDefinicion de iteracion\n");
+	int indiceDesapilado;
+	int indiceActual = obtenerIndiceActual();
+	if(pila_vacia(&pila_condicion_doble) == PILA_VACIA)
+	{
+		sacar_de_pila(&pila, &indiceDesapilado);
+		modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+	}
+	else
+	{
+		if(strcmp(condicion,"AND") == 0)
+		{
+			sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+			sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+		}
+		if(strcmp(condicion,"OR") == 0)
+		{
+			sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+			sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indicePrincipioBloque));
+		}
+		// Debo desapilar el ultimo porque no me sirve
+		sacar_de_pila(&pila, &indiceDesapilado);
+	}
+	sacar_de_pila(&pila, &indiceDesapilado);
+	crearTerceto("JMP",armarIndiceI(indiceDesapilado),"_");
+	};
 
 condicion:
-	 comparacion AND comparacion {printf("	Comparacion con AND\n");}
-	|comparacion OR comparacion {printf("	Comparacion con OR\n");} 
+	 comparacion {indiceComparador1 = indiceComparador;} AND comparacion {printf("	Comparacion con AND\n");
+	 				printf("\t\tCONDICION DOBLE AND\n");
+					indiceComparador2 = indiceComparador;
+					strcpy(condicion, "AND");
+					poner_en_pila(&pila_condicion_doble,&indiceComparador1);
+					poner_en_pila(&pila_condicion_doble,&indiceComparador2);}
+	|comparacion {
+						indiceComparador1 = indiceComparador;
+						char *operador = obtenerTerceto(indiceComparador1,1);
+						char *operadorNegado = negarComparador(operador);
+						modificarTerceto(indiceComparador1,1,operadorNegado);
+						startEtiqueta = 0;
+					} OR comparacion {printf("	Comparacion con OR\n");
+						indiceComparador2 = indiceComparador;
+						strcpy(condicion, "OR");
+						poner_en_pila(&pila_condicion_doble,&indiceComparador1);
+						poner_en_pila(&pila_condicion_doble,&indiceComparador2);
+						} 
 	|comparacion {printf("	Comparacion simple\n");} 
-	|NOT comparacion {printf("	Comparacion negada\n");} ;
+	|NOT comparacion {printf("	Comparacion negada\n");
+						char *operador = obtenerTerceto(indiceComparador,1);
+						char *operadorNegado = negarComparador(operador);
+						modificarTerceto(indiceComparador,1,operadorNegado);} ;
 
 comparacion:
-	 expresion comparador expresion {printf("	Expresion comparada contra expresion\n");}
+	 expresion { indiceIzq = indiceExpresion; } comparador expresion {printf("	Expresion comparada contra expresion\n");
+				compararTipos();
+				indiceDer = indiceExpresion;
+				crearTerceto("CMP",armarIndiceI(indiceIzq),armarIndiceD(indiceDer));
+				char comparadorDesapilado[8];
+				sacar_de_pila(&pila, &comparadorDesapilado);
+				indiceComparador = crearTerceto(comparadorDesapilado,"_","_");
+				poner_en_pila(&pila,&indiceComparador);
+				}
 	|expresion {printf("	Expresion unica en la comparacion\n");};
 
 comparador:
-	 IGUAL {printf("	Comparador igual\n");}
-	|MAYOR {printf("	Comparador mayor\n");}
-	|MENOR {printf("	Comparador menor\n");}
-	|MAYOR_IGUAL {printf("	Comparador mayor igual\n");}
-	|MENOR_IGUAL {printf("	Comparador menor igual\n");}
-	|DISTINTO {printf("	Comparador distinto\n");};
+	 IGUAL {printf("	Comparador igual\n");
+		char comparadorApilado[8] = "JE";
+		poner_en_pila(&pila,&comparadorApilado);}
+	|MAYOR {printf("	Comparador mayor\n"); 
+		char comparadorApilado[8] = "JA";
+		poner_en_pila(&pila,&comparadorApilado);}
+	|MENOR {printf("	Comparador menor\n");
+		char comparadorApilado[8] = "JB";
+		poner_en_pila(&pila,&comparadorApilado);}
+	|MAYOR_IGUAL {printf("	Comparador mayor igual\n");
+		char comparadorApilado[8] = "JAE";
+		poner_en_pila(&pila,&comparadorApilado);}
+	|MENOR_IGUAL {printf("	Comparador menor igual\n");
+		char comparadorApilado[8] = "JBE";
+		poner_en_pila(&pila,&comparadorApilado);}
+	|DISTINTO {printf("	Comparador distinto\n");
+		char comparadorApilado[8] = "JNE";
+		poner_en_pila(&pila,&comparadorApilado);};
 	
 bloque:
 	 LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
 	 
-bloque_anidado:
-	 LLAVE_I decision_IF LLAVE_F {printf("	Bloque de codigo anidado\n");};
-
 maximo:
 	MAX PAR_I lista_factores PAR_F {printf("	Definicion del maximo\n");};
 
@@ -398,20 +514,76 @@ lista_factores:
 	 lista_factores SEPARADOR expresion {printf("	Definicion de la lista de valores\n");}
 	|expresion;
 
-decision_IF:
-	 IF PAR_I condicion PAR_F bloque {printf("	Definicion de IF con bloque\n");}	
-	|IF PAR_I condicion PAR_F sentencia {printf("	Definicion de IF con sentencia\n");}
-	|IF PAR_I condicion PAR_F bloque_anidado {printf("	Definicion de IF con bloque anidado\n");}
-	;
-decision_else:
-	 ELSE bloque {printf("	Definicion de ELSE con bloque\n");}
-	|ELSE sentencia {printf("	Definicion de ELSE con sentencia\n");}
-	|ELSE bloque_anidado {printf("	Definicion de ELSE con bloque anidado\n");}
-	;
 decision:
-	decision_IF decision_else {printf("	Definicion de IF ELSE\n");}
-	|decision_IF sentencia {printf("	Definicion de IF\n");}
-	;
+	IF PAR_I condicion PAR_F
+	bloque
+	{
+		int indiceDesapilado;
+		int indiceActual = obtenerIndiceActual();
+		if(pila_vacia(&pila_condicion_doble) == PILA_VACIA)
+		{
+			sacar_de_pila(&pila, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual));
+		}
+		else
+		{
+			if(strcmp(condicion,"AND") == 0)
+			{
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual));
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual));
+			}
+			if(strcmp(condicion,"OR") == 0)
+			{
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual));
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceComparador+1));
+			}
+		}
+	}
+	|
+	IF PAR_I condicion PAR_F bloque {printf("\t\tIF\n");}
+	ELSE
+	{
+		printf("\t\tELSE\n");
+		int indiceDesapilado;
+		int indiceActual = obtenerIndiceActual();
+		if(pila_vacia(&pila_condicion_doble) == PILA_VACIA)
+		{
+			sacar_de_pila(&pila, &indiceDesapilado);
+			modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+		}
+		else
+		{
+			if(strcmp(condicion,"AND") == 0)
+			{
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+			}
+			if(strcmp(condicion,"OR") == 0)
+			{
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual+1));
+				sacar_de_pila(&pila_condicion_doble, &indiceDesapilado);
+				modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceComparador+1));
+			}
+		}
+		indiceAux = crearTerceto("JMP","_","_");
+		poner_en_pila(&pila, &indiceAux);
+
+		startEtiqueta = 0;
+	}
+	bloque
+	{
+		int indiceDesapilado;
+		int indiceActual = obtenerIndiceActual();
+		sacar_de_pila(&pila, &indiceDesapilado);
+		modificarTerceto(indiceDesapilado, 2, armarIndiceI(indiceActual));
+	};
 	
 %%	
 
@@ -432,95 +604,112 @@ int main (int argc,char *argv[]){
  listaVaciar(&lista1,&dat);
  return 0;
 }
-int yyerror(void)
-	{ 
+int yyerror(void){ 
  	  printf("Syntax Error\n");
 	  system("Pause");
-          exit (1);
-	}
-	
-//FUNCIONES DE TERCETOS
-
-char* crearIndice(int num){
-
-char * resultado = (char*)malloc(sizeof(char)*7);
-char numeroTexto [4];
-
-	strcpy(resultado,"[");
-	itoa(num,numeroTexto,10);
-    strcat(resultado,numeroTexto);
-	strcat(resultado,"]");
-    return resultado;
+      exit (1);
 }
 
-int crearTerceto (char * primero, char *izquierda,char *derecha){
-//le mandamos los tres strings para crear el terceto. No reciben numeros ni nada, solo strings. 
-//la funcion tambien tiene que guardar el terceto creado en el vectorTercetos.
-//La posicion en el vector se lo da contadorTercetos. Variable que debe aumentar en 1.
-
-  terceto nuevo;
-  nuevo.primerElemento = malloc(sizeof(char)*strlen(primero)+1);
-  strcpy(nuevo.primerElemento,primero);
-  nuevo.elementoIzquierda = malloc(sizeof(char)*strlen(izquierda)+1);
-  strcpy(nuevo.elementoIzquierda,izquierda);
-  nuevo.elementoDerecha = malloc(sizeof(char)*strlen(derecha)+1);
-  strcpy(nuevo.elementoDerecha,derecha);
-  nuevo.numeroTerceto = contadorTercetos;
-  //printf("%d %s %s %s\n",nuevo.numeroTerceto,nuevo.primerElemento,nuevo.elementoIzquierda,nuevo.elementoDerecha);
-  vectorTercetos[contadorTercetos] = nuevo;
-  contadorTercetos++;
-  return nuevo.numeroTerceto;
-} 
-
-int crearTercetoNumero(char* primero, char * izquierda, char *derecha, int numero){
-  terceto nuevo;
-  nuevo.primerElemento = malloc(sizeof(char)*strlen(primero)+1);
-  strcpy(nuevo.primerElemento,primero);
-  nuevo.elementoIzquierda = malloc(sizeof(char)*strlen(izquierda)+1);
-  strcpy(nuevo.elementoIzquierda,izquierda);
-  nuevo.elementoDerecha = malloc(sizeof(char)*strlen(derecha)+1);
-  strcpy(nuevo.elementoDerecha,derecha);
-  nuevo.numeroTerceto = numero;
-  vectorTercetos[numero] = nuevo;
-  return nuevo.numeroTerceto;
-}
-//Parecida a la anterior pero crea un terceto con un numero en especifico.
-//No aumenta en 1 contadorTercetos.
-//La funcion guarda el terceto en el vector en la posicion que recibe por argumento.
-
-void parsearCadena (char * origen, char * destino){
-  int i=0,contDestino=0;
-  while(origen[i]!=' ' && origen[i]!=':'){
-    destino[i]=origen[i];
-    i++;
-  }
-  destino[i]='\0';
-}
-
-int getTipoPorID(char* name)
+char * negarComparador(char* comparador)
 {
-   int i=0;
-   while(i<=finDeTabla){
-     if(strcmp(tablaSimbolo[i].nombre,name) == 0){
-       return tablaSimbolo[i].tipoDato;
-     }
-     i++;
-   }
-
-   yyerror("Error: la variable no se encontraba");
-   return -1;
+	if(strcmp(comparador,"JA") == 0)
+		return "JBE";
+	if(strcmp(comparador,"JB") == 0)
+		return "JAE";
+	if(strcmp(comparador,"JNB") == 0)
+		return "JB";
+	if(strcmp(comparador,"JBE") == 0)
+		return "JA";
+	if(strcmp(comparador,"JE") == 0)
+		return "JNE";
+	if(strcmp(comparador,"JNE") == 0)
+		return "JE";
+	return NULL;
 }
 
-void guardarTercetosEnArchivo(char *nombreArchivo){//guarda los tercetos en un archivo con el nombre que nosotros le pasemos (creo que en un binaro queda mejor)
-  int i;
-  FILE * fp;
-  fp = fopen(nombreArchivo,"wt");
-  terceto aux;
-  for (i=0;i<contadorTercetos;i++){
-    aux = vectorTercetos[i];
-    fprintf(fp,"%d (%s,%s,%s) \n",aux.numeroTerceto,aux.primerElemento,aux.elementoIzquierda,aux.elementoDerecha);
-  }
-  fclose(fp);
+void compararTipos()
+{
+	// imprimirArrayComparacionTipos();
+	char* tipoBase = arrayComparacionTipos[0];
+	int i;
+	for (i=1; i < longitud_arrayComparacionTipos; i++)
+	{
+		char* tipoAComparar = arrayComparacionTipos[i];
+		if(strcmp(tipoBase, tipoAComparar) != 0)
+		{
+			char msg[300];
+		    sprintf(msg, "ERROR en etapa GCI - Tipo de datos incompatibles. Tipo 1: \'%s\' Tipo 2: \'%s\'", tipoBase, tipoAComparar);
+		
+		}
+	}
+	longitud_arrayComparacionTipos = 0;
 }
 
+void insertarEnArrayDeclaracion(char * val)
+{
+    char * aux = (char *) malloc(sizeof(char) * (strlen(val) + 1));
+    strcpy(aux, val);
+    arrayDeclaraciones[longitud_arrayDeclaraciones] = aux;
+    longitud_arrayDeclaraciones++;
+}
 
+void insertarEnArrayComparacionTipos(char * val)
+{
+	if(existeTokenEnTS(yylval.stringValue) == NO_EXISTE)
+	{
+		char msg[300];
+		sprintf(msg, "ERROR en etapa GCI - Variable \'%s\' no declarada en la seccion declaracion", yylval.stringValue);
+	
+	}
+	// Inserto tipo en array
+	char * tipo = recuperarTipoTS(val);
+	tipo = tipoConstanteConvertido(tipo);
+	char * aux = (char *) malloc(sizeof(strlen(tipo) + 1));
+	strcpy(aux, tipo);
+	arrayComparacionTipos[longitud_arrayComparacionTipos] = aux;
+	longitud_arrayComparacionTipos++;
+}
+
+void validarDeclaracionTipoDato(char * tipo)
+{
+	int i;
+	for (i=0; i < longitud_arrayDeclaraciones; i++)
+	{
+		if(existeTokenEnTS(arrayDeclaraciones[i]) == NO_EXISTE)
+		{
+			insertarTokenEnTS(tipo,arrayDeclaraciones[i]);
+		}
+		else
+		{
+			char msg[300];
+			sprintf(msg, "ERROR en etapa GCI - Variable \'%s\' ya declarada", arrayDeclaraciones[i]);
+			
+		}
+	}
+	longitud_arrayDeclaraciones = 0;
+}
+char * tipoConstanteConvertido(char* tipoVar)
+{
+	if(strcmp(tipoVar, "INTEGER") != 0 && strcmp(tipoVar, "FLOAT") != 0 && strcmp(tipoVar, "STRING") != 0)
+	{
+		if(strcmp(tipoVar, "CTE_ENT") == 0)
+		{
+			return "INTEGER";
+		}
+		else
+			if(strcmp(tipoVar, "CTE_REAL") == 0)
+			{
+				return "FLOAT";
+			}
+			else
+				if(strcmp(tipoVar, "CONST_STR") == 0)
+				{
+					return "STRING";
+				}
+				else
+				{
+					return NULL;
+				}
+	}
+	return tipoVar;
+}

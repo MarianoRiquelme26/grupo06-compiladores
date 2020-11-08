@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "y.tab.h"
+#include "files_h/constantes.h"
+#include "files_h/ts.h"
 
 FILE *yyin;
 char *yyltext;
@@ -56,7 +58,7 @@ CTE_OC			"0o".{DIGITO}*
 CTE_BIN			"0b".{DIGITO}*
 ID				{LETRA}+{DIGITO}*
 TEXT			{LETRA}*.{ESP}*.{OP_AS}*.{CTE_ENT}*.{ESP}*
-TEXT_W			{COMILLA}.{TEXT}+.{COMILLA}
+TEXT_W			\"([^"]|\\.)*\"
 COMENTARIO		{COM_ABRE}.{TEXT}+.{COM_CIERRA}
 OP_MUL			[*]
 RES				[-]
@@ -99,7 +101,8 @@ RES				[-]
 					if(atoi(yytext)<=65535)
 					{
 						
-						yylval.stringValue = strdup(yytext); 
+					yylval.stringValue = strdup(yytext);
+					insertarTokenEnTS("CTE_ENT", yylval.stringValue);					
 					return CTE_ENT;
 					}
 					else {
@@ -110,7 +113,8 @@ RES				[-]
 {CTE_REAL}		{
 					if(atof(yytext)>=-3.40282347e+38F && atof(yytext)<=3.40282347e+38F)
 					{
-						yylval.stringValue = strdup(yytext); 
+					yylval.stringValue = strdup(yytext); 
+					insertarTokenEnTS("CTE_REAL", yylval.stringValue);
 					return CTE_REAL;
 					}
 					else {
@@ -120,16 +124,19 @@ RES				[-]
 				}
 
 {CTE_HEX}		{
-					yylval.stringValue = strdup(yytext); 
+					yylval.stringValue = strdup(yytext);
+					//insertarTokenEnTS("CTE_HEX", yylval.stringValue);					
 					return CTE_HEX;
 				}	
 {CTE_OC}		{
-					yylval.stringValue = strdup(yytext); 
+					yylval.stringValue = strdup(yytext);
+					//insertarTokenEnTS("CTE_OC", yylval.stringValue);					
 					return CTE_OC;
 				}	
 				
 {CTE_BIN}		{
-					yylval.stringValue = strdup(yytext); 
+					yylval.stringValue = strdup(yytext);
+					//insertarTokenEnTS("CTE_BIN", yylval.stringValue);					
 					return CTE_BIN;
 				}
 				
