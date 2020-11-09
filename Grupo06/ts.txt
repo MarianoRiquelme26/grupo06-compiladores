@@ -1,2 +1,8 @@
-token: ID	 lexemas:  contador,actual
-token: CTE	 lexemas:  9,0b111010,0,0b10
+Nombre                        Tipo        Valor                         Longitud    
+suma                          FLOAT       
+0                            CTE_ENT                                               
+02.5                         CTE_REAL                                              
+9                            CTE_ENT                                               
+1                            CTE_ENT                                               
+0.342                        CTE_REAL                                              
+2                            CTE_ENT                                               

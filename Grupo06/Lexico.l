@@ -1,7 +1,8 @@
 %{
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <conio.h>
 #include "y.tab.h"
 #include "files_h/constantes.h"
 #include "files_h/ts.h"
@@ -58,7 +59,7 @@ CTE_OC			"0o".{DIGITO}*
 CTE_BIN			"0b".{DIGITO}*
 ID				{LETRA}+{DIGITO}*
 TEXT			{LETRA}*.{ESP}*.{OP_AS}*.{CTE_ENT}*.{ESP}*
-TEXT_W			\"([^"]|\\.)*\"
+CTE_STR			\"(({LETRA}|{DIGITO}|[\?\¿\!\¡=#$%()\[\]{}_-]){0,30})\"
 COMENTARIO		{COM_ABRE}.{TEXT}+.{COM_CIERRA}
 OP_MUL			[*]
 RES				[-]
@@ -98,7 +99,7 @@ RES				[-]
 {FIN_SENT}		{return FIN_SENT;}
 {SEPARADOR}		{return SEPARADOR;}
 {CTE_ENT}		{
-					if(atoi(yytext)<=65535)
+					if(atoi(yytext)<=65535 && atoi(yytext)>=-65535)
 					{
 						
 					yylval.stringValue = strdup(yytext);
@@ -141,8 +142,12 @@ RES				[-]
 				}
 				
 {COMILLA}		{return COMILLA;}
-{TEXT_W}		{if(strlen(yytext) <= 30){
-					return TEXT_W;
+{CTE_STR}		{if(strlen(yytext) <= 30){
+					memcpy(yytext, &yytext[1], strlen(yytext)-2);
+                    yytext[strlen(yytext)-2] = '\0';
+                    sprintf(yylval.stringValue,"_%s",yytext);
+					insertarTokenEnTS("CTE_STR", yylval.stringValue);
+					return CTE_STR;
 			     } else {
 			        printf("lexico: ERROR - Salida muy larga, no debe superar los 30 caracteres %s\n",yytext); 
 				 }

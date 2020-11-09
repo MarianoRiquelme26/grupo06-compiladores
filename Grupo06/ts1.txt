@@ -1,2 +1,0 @@
-Nombre                        Tipo        Valor                         Longitud    
-02.5                         CTE_REAL                                              

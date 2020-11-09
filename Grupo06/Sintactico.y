@@ -13,114 +13,6 @@ int yyerror();
 int yylex();
 char *yyltext;
 
-// DEFICION DE ESTRUCTURA DE INFORMACION QUE VA CONTENER EL TOKEN Y LEXEMA //
-typedef struct
-{
-    char token[4];
-    char lexema[10];
-} t_info;
-
-// DEFINCION DE LA ESTRUCTURA DE LA LISTA //
-typedef struct s_nodo_lista
-{
-    t_info dat;
-    struct s_nodo_lista* sig;
-} t_nodo_lista;
-typedef t_nodo_lista* t_lista;
-
-typedef int (*t_cmp)(const void*,const void*);
-// FUNCION DE COMPARACION DE LEXEMAS //    
-int comp(const void* d1,const void *d2)
-{
-    t_info *dat1=(t_info*)d1;
-    t_info *dat2=(t_info*)d2;
-	return strcmp(dat1->lexema,dat2->lexema);
-}
-t_lista lista1;
-t_info dat;
-int contadorLetrastID = 0;
-int contadorLetrastCT = 0;
-// PRIMITIVAS DE LISTA //
-void listaCrear(t_lista* pl)
-{
-    *pl=NULL;
-}
-int listaVacia(const t_lista* pl)
-{
-    return !*pl;
-}
-void listaVaciar(t_lista* pl,t_info* dat)
-{
-	FILE *pt;
-    char* cad;
-    char lineaID[contadorLetrastID+1];
-	char lineaCTE[contadorLetrastCT+1];
-	strcpy(lineaID,"");
-	strcpy(lineaCTE,"");
-    t_nodo_lista* elim;
-	pt=fopen("ts.txt","w");
-    if(!pt)
-    {
-        puts("erro al intentar abrir algun archivo");
-        exit(0);
-    }
-	
-    while(*pl)
-    {
-        elim=*pl;
-		*dat=elim->dat;
-		if(strcmp(dat->token,"ID")==0)
-		{
-			strcat(lineaID,",");
-			strcat(lineaID,dat->lexema);
-		}
-			
-		if(strcmp(dat->token,"CTE")==0)
-		{
-			strcat(lineaCTE,",");
-			strcat(lineaCTE,dat->lexema);
-		}
-			
-        *pl=elim->sig;
-        free(elim);
-		
-    }
-	//correcion para borrar la primer coma
-	cad = lineaID;
-	*cad = ' ';
-	cad = lineaCTE;
-	*cad = ' ';
-	// guardo las lineas en la tabla de simbolos //
-	fprintf(pt,"token: ID\t lexemas: %s\n",lineaID);
-	fprintf(pt,"token: CTE\t lexemas: %s\n",lineaCTE);
-	fclose(pt);
-}
-
-int listaBuscar(const t_lista* pl,t_info* dat,t_cmp comp)
-{
-    while(*pl){
-		if(comp(dat,&(*pl)->dat)==0)
-		{
-			return 1;
-		}
-		pl=&(*pl)->sig;
-	}
-    
-    return 0;
-}
-
-int insertarLista(t_lista* pl,t_info* dat)
-{
-    t_nodo_lista* nuevo;
-
-    nuevo=(t_nodo_lista*)malloc(sizeof(t_nodo_lista));
-    if(!nuevo)
-        return 0;
-    nuevo->dat=*dat;
-    nuevo->sig=*pl;
-    *pl=nuevo;
-    return 1;
-}
 
 //////////COMENZAMOS TERCETOS ///////////
 
@@ -181,6 +73,7 @@ int insertarLista(t_lista* pl,t_info* dat)
 ///////FIN DE PRIMITVAS/////////////
 
 %}
+
 %union 
 { 
     int intValue; 
@@ -222,7 +115,7 @@ int insertarLista(t_lista* pl,t_info* dat)
 %token 	CTE_OC
 %token 	CTE_BIN
 %token 	COMILLA		
-%token 	TEXT_W
+%token 	<stringValue> CTE_STR
 %token 	OP_MUL
 %token 	COMENTARIO				
 %token 	COMPARACION	
@@ -240,8 +133,8 @@ programa :
 		crear_pila(&pilaTemporal);
 		printf("	FIN programa\n");}
 	|sentencia { 
-		crear_pila(&pilaDatos);
-		crear_pila(&pilaTemporal);
+		//crear_pila(&pilaDatos);
+		//crear_pila(&pilaTemporal);
 		crearArchivoTS();
 		crearArchivoTercetosIntermedia();
 		printf("	FIN sentencia\n");};
@@ -316,7 +209,7 @@ TIPO_DATO:
 
 
 asig:
-	lista_id expresion
+	lista_id expresion FIN_SENT
 	{
 		printf("\t\tASIGNACION\n");
 		//compararTipos();
@@ -351,61 +244,35 @@ factor:
 	ID {indiceFactor = crearTerceto(yylval.stringValue,"_","_"); 
 	 printf("	ID es Factor: %s\n",yylval.stringValue);
 	//insertarEnArrayComparacionTipos(yylval.stringValue);
-	strcpy(dat.token,"ID");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastID += strlen(yylval.stringValue)+1;
-	}}
+	}
 	|CTE_ENT {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
 	 printf("	CTE Entera es Factor: %s\n",yylval.stringValue);
 	 insertarEnArrayComparacionTipos(yylval.stringValue);
-	strcpy(dat.token,"CTE");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastCT += strlen(yylval.stringValue)+1;
-	}}
+	}
 	|CTE_REAL {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
 	 printf("	CTE Real es Factor: %s\n",yylval.stringValue);
 	 insertarEnArrayComparacionTipos(yylval.stringValue);
-	strcpy(dat.token,"CTE");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastCT += strlen(yylval.stringValue)+1;
-	}}
+	}
+	|CTE_STR {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 printf("	CTE String es Factor: %s\n",yylval.stringValue);
+	 insertarEnArrayComparacionTipos(yylval.stringValue);}
 	|CTE_HEX {indiceFactor = crearTerceto(yylval.stringValue,"_","_");
 	 printf("	CTE Hexadecimal es Factor: %s\n",yylval.stringValue);
-	strcpy(dat.token,"CTE");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastCT += strlen(yylval.stringValue)+1;
-	}}
+	 }
 	|CTE_OC {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
 	 printf("	CTE Octal es Factor: %s\n",yylval.stringValue);
-	strcpy(dat.token,"CTE");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastCT += strlen(yylval.stringValue)+1;
-	}}
+	}
 	|CTE_BIN {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
 	 printf("	CTE Binaria es Factor: %s\n",yylval.stringValue);
-	strcpy(dat.token,"CTE");
-	strcpy(dat.lexema,yylval.stringValue);
-	if(!listaBuscar(&lista1,&dat,comp)){
-		insertarLista(&lista1,&dat);
-		contadorLetrastCT += strlen(yylval.stringValue)+1;
-	}}
+	}
 	|maximo {printf("	Maximo es Factor\n");}
 	|PAR_I expresion PAR_F {printf("	Expresion entre parentesis es Factor\n");};
 
 salida:
-	 PUT TEXT_W FIN_SENT {printf("	Definicion de Salida\n");
+	 PUT CTE_STR FIN_SENT {
 	 indiceAux = crearTerceto(yylval.stringValue,"_","_");
-	 crearTerceto("PUT",armarIndiceI(indiceAux),"_");}
+	 crearTerceto("PUT",armarIndiceI(indiceAux),"_");
+	 printf("	Definicion de Salida\n");}
 	|PUT ID FIN_SENT {printf("	Definicion de Salida\n");
 	 indiceAux = crearTerceto(yylval.stringValue,"_","_");
 	 crearTerceto("PUT",armarIndiceI(indiceAux),"_");};
@@ -589,9 +456,6 @@ decision:
 
 int main (int argc,char *argv[]){
 
- //Creo la tabla de simbolos
- listaCrear(&lista1);
-	
  if ((yyin=fopen(argv[1],"rt"))==NULL)
  {
   	printf("\nNo se puede abrir el archivo: %s\n",argv[1]);
@@ -600,8 +464,7 @@ int main (int argc,char *argv[]){
 	yyparse();
  }
  fclose(yyin);
- //Cargo la tabla de simbolos
- listaVaciar(&lista1,&dat);
+
  return 0;
 }
 int yyerror(void){ 
@@ -702,7 +565,7 @@ char * tipoConstanteConvertido(char* tipoVar)
 				return "FLOAT";
 			}
 			else
-				if(strcmp(tipoVar, "CONST_STR") == 0)
+				if(strcmp(tipoVar, "CTE_STR") == 0)
 				{
 					return "STRING";
 				}
