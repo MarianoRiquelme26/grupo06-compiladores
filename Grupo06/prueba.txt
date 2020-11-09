@@ -1,6 +1,6 @@
 DIM < contador,actual,suma> AS < Integer,Float,Float >
-PUT "Prueba";
-PUT "Prueba";
+PUT "Prueba a";
+PUT "Hola";
 GET actual;
 contador:= 0;
 suma:= 02.5+0xA2B0;
@@ -9,14 +9,14 @@ contador:= contador + 1;
 actual:= (contador/0.342) + 2;
 suma:= suma + actual;
 }
-PUT "Prueba";
+PUT "Otra";
 PUT suma;
 if (actual > 0b10 and actual <> 0){
-PUT "Prueba";
+PUT "Mas";
 }
 Else
 {
 if (actual < 0b111010){
-PUT "Prueba";
+PUT "Siguiente";
 }
 }

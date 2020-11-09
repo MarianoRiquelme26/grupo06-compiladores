@@ -59,7 +59,9 @@ CTE_OC			"0o".{DIGITO}*
 CTE_BIN			"0b".{DIGITO}*
 ID				{LETRA}+{DIGITO}*
 TEXT			{LETRA}*.{ESP}*.{OP_AS}*.{CTE_ENT}*.{ESP}*
-CTE_STR			\"(({LETRA}|{DIGITO}|[\?\¿\!\¡=#$%()\[\]{}_-]){0,30})\"
+CARACTER		[a-z,A-Z,0-9,=,>,<,!,:,+,-,*,/]
+ESPACIO         [" "]        
+CTE_STR			{COMILLA}({CARACTER}+|{ESPACIO})*{COMILLA} 
 COMENTARIO		{COM_ABRE}.{TEXT}+.{COM_CIERRA}
 OP_MUL			[*]
 RES				[-]

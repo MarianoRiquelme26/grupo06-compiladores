@@ -13,7 +13,6 @@ int yyerror();
 int yylex();
 char *yyltext;
 
-
 //////////COMENZAMOS TERCETOS ///////////
 
 	void insertarEnArrayDeclaracion(char *);
@@ -38,18 +37,6 @@ char *yyltext;
 	//t_pila pilaDatosInversa;
 	char condicion[5];
 
-	// Para assembler
-	FILE * pfASM; // Final.asm
-	//t_pila pila;  // Pila saltos
-	//t_pila pVariables;  // Pila variables
-
-	void generarAssembler();
-	void generarEncabezado();
-	void generarDatos();
-	void generarCodigo();
-	void imprimirInstrucciones();
-	void generarFin();
-
 	// arrays
 	char * arrayDeclaraciones[100];
 	char * arrayTipoDato[100];
@@ -66,9 +53,7 @@ char *yyltext;
 	indiceId;
 	int indicePrincipioBloque;
 	char idAsignarStr[50];
-	
-	int startEtiqueta = 0;
-	
+
 
 ///////FIN DE PRIMITVAS/////////////
 
@@ -133,8 +118,6 @@ programa :
 		crear_pila(&pilaTemporal);
 		printf("	FIN programa\n");}
 	|sentencia { 
-		//crear_pila(&pilaDatos);
-		//crear_pila(&pilaTemporal);
 		crearArchivoTS();
 		crearArchivoTercetosIntermedia();
 		printf("	FIN sentencia\n");};
@@ -144,7 +127,7 @@ sentencia:
 	|bloque_declaracion {printf("	Sentencia es bloque_declaracion\n");}
 	|asig {printf("	Sentencia es asignacion\n");}
 	|iteracion {printf("	Sentencia es Iteracion\n");}
-	|salida {crearArchivoTercetosIntermedia() ; printf("	Sentencia es salida\n");}
+	|salida {printf("	Sentencia es salida\n");}
 	|decision {printf("	Sentencia es decision\n");}
 	|entrada {printf("	Sentencia es entrada\n");}
 	|COMENTARIO;
@@ -326,7 +309,7 @@ condicion:
 						char *operador = obtenerTerceto(indiceComparador1,1);
 						char *operadorNegado = negarComparador(operador);
 						modificarTerceto(indiceComparador1,1,operadorNegado);
-						startEtiqueta = 0;
+
 					} OR comparacion {printf("	Comparacion con OR\n");
 						indiceComparador2 = indiceComparador;
 						strcpy(condicion, "OR");
@@ -442,7 +425,6 @@ decision:
 		indiceAux = crearTerceto("JMP","_","_");
 		poner_en_pila(&pila, &indiceAux);
 
-		startEtiqueta = 0;
 	}
 	bloque
 	{
