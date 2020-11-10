@@ -13,7 +13,7 @@ int yyerror();
 int yylex();
 char *yyltext;
 
-//////////COMENZAMOS TERCETOS ///////////
+//////////COMENZAMOS///////////
 
 	void insertarEnArrayDeclaracion(char *);
 	void validarDeclaracionTipoDato(char *);
@@ -31,10 +31,8 @@ char *yyltext;
 	// Pilas para resolver GCI
 	t_pila pila;
 	t_pila pila_condicion_doble;
-	//t_pila pila_inlist;
 	t_pila pilaDatos;
 	t_pila pilaTemporal;
-	//t_pila pilaDatosInversa;
 	char condicion[5];
 
 	// arrays
@@ -53,9 +51,6 @@ char *yyltext;
 	indiceId;
 	int indicePrincipioBloque;
 	char idAsignarStr[50];
-
-
-///////FIN DE PRIMITVAS/////////////
 
 %}
 
@@ -132,15 +127,9 @@ sentencia:
 	|entrada {printf("	Sentencia es entrada\n");}
 	|COMENTARIO;
 
-
-bloque_declaracion: DIM declaraciones;
-	
-declaraciones:
-declaracion | declaraciones declaracion;
-
-declaracion:
-	MENOR NODO
-	{
+bloque_declaracion:
+	 DIM MENOR listaVariables MAYOR AS MENOR listaTipos MAYOR {printf("	Bloque declaracion\n");
+	 	{
 			while((pila_vacia(&pilaDatos) != PILA_VACIA ) && (pila_vacia(&pilaTemporal) != PILA_VACIA))
 			{
 				sacar_de_pila(&pilaTemporal, &tipoDato);
@@ -161,21 +150,19 @@ declaracion:
 								}
 				}
 			}
-  }
-  MAYOR;
+	}};
+	 
+listaVariables:
+	 listaVariables SEPARADOR ID{ poner_en_pila(&pilaDatos, yylval.stringValue);}
+     |ID { poner_en_pila(&pilaDatos, yylval.stringValue);}
+	 {printf("	Declaraciones variables\n");};
+	 
+listaTipos: 
+	 listaTipos SEPARADOR tipo_dato
+	|tipo_dato
+	{printf("	Declaraciones tipos\n");};
 
-NODO:
-ID MAYOR AS MENOR TIPO_DATO
-{
-	poner_en_pila(&pilaDatos, yylval.stringValue);
-};
-NODO:
-	ID SEPARADOR NODO SEPARADOR TIPO_DATO
-	{
-		poner_en_pila(&pilaDatos, yylval.stringValue);
-	};
-
-TIPO_DATO:
+tipo_dato:
 
 	STRING {
 	poner_en_pila(&pilaTemporal, "STRING");
@@ -240,12 +227,15 @@ factor:
 	 printf("	CTE String es Factor: %s\n",yylval.stringValue);
 	 insertarEnArrayComparacionTipos(yylval.stringValue);}
 	|CTE_HEX {indiceFactor = crearTerceto(yylval.stringValue,"_","_");
+	 //insertarEnArrayComparacionTipos(yylval.stringValue);
 	 printf("	CTE Hexadecimal es Factor: %s\n",yylval.stringValue);
 	 }
 	|CTE_OC {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 //insertarEnArrayComparacionTipos(yylval.stringValue);
 	 printf("	CTE Octal es Factor: %s\n",yylval.stringValue);
 	}
 	|CTE_BIN {indiceFactor = crearTerceto(yylval.stringValue,"_","_") ;
+	 //insertarEnArrayComparacionTipos(yylval.stringValue);
 	 printf("	CTE Binaria es Factor: %s\n",yylval.stringValue);
 	}
 	|maximo {printf("	Maximo es Factor\n");}

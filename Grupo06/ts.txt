@@ -1,5 +1,7 @@
 Nombre                        Tipo        Valor                         Longitud    
 suma                          FLOAT       
+actual                        FLOAT       
+contador                      STRING      
 0                            CTE_ENT                                               
 02.5                         CTE_REAL                                              
 9                            CTE_ENT                                               

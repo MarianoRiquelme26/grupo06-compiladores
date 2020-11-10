@@ -1,5 +1,5 @@
-DIM < contador,actual,suma> AS < Integer,Float,Float >
-PUT "Prueba a";
+DIM < contador,actual,suma> AS < String,Float,Float >
+PUT "Prueba aakflkafhalfl";
 PUT "Hola";
 GET actual;
 contador:= 0;
