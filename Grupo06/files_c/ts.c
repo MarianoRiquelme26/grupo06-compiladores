@@ -92,6 +92,48 @@ void debugTS()
 	printf("\n====== FIN DEBUG TABLA SIMBOLOS ======\n\n");
 }
 
+void prepararTSParaAssembler()
+{
+	int i;
+	int contador = 1;
+	for (i = 0; i < posicion_en_ts; i++)
+	{
+		if ((strcmp(tablaSimbolos[i].tipo, "INTEGER") == 0)
+		|| (strcmp(tablaSimbolos[i].tipo, "FLOAT") == 0)
+		|| (strcmp(tablaSimbolos[i].tipo, "STRING") == 0))
+		{
+			char nuevoNombre[100] = "";
+			strcat(nuevoNombre, tablaSimbolos[i].nombre);
+			strcpy(tablaSimbolos[i].nombre, nuevoNombre);
+
+			// solo a fines practicos
+			strcpy(tablaSimbolos[i].valor, tablaSimbolos[i].nombre);
+		}
+		else
+		{
+			strcpy(tablaSimbolos[i].valor, tablaSimbolos[i].nombre);
+
+			if(strcmp(tablaSimbolos[i].tipo, "CTE_STR") == 0)
+			{
+				int longitud = strlen(tablaSimbolos[i].valor);
+
+				char longitudStr[10];
+				sprintf(longitudStr, "%d", longitud);
+				strcpy(tablaSimbolos[i].longitud, longitudStr);
+
+			}
+
+			char nuevoNombreConstantes[10] = "&cte";
+			char contadorStr[10];
+			sprintf(contadorStr, "%d", contador);
+			strcat(nuevoNombreConstantes, contadorStr);
+			strcpy(tablaSimbolos[i].nombre, nuevoNombreConstantes);
+
+			contador++;
+		}
+	}
+
+}
 
 int crearArchivoTS()
 {

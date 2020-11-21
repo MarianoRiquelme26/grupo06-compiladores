@@ -3,7 +3,7 @@ PUT "Prueba aakflkafhalfl";
 PUT "Hola";
 GET actual;
 contador:= 0;
-suma:= 02.5+0xA2B0;
+suma:= 02.5+0.0;
 while (contador <= 9) {
 contador:= contador + 1;
 actual:= (contador/0.342) + 2;
@@ -11,12 +11,12 @@ suma:= suma + actual;
 }
 PUT "Otra";
 PUT suma;
-if (actual > 0b10 and actual <> 0){
+if (actual > 10 and actual <> 0){
 PUT "Mas";
 }
 Else
 {
-if (actual < 0b111010){
+if (actual < 5){
 PUT "Siguiente";
 }
 }

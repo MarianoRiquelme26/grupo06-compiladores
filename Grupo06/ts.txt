@@ -2,9 +2,10 @@ Nombre                        Tipo        Valor                         Longitud
 suma                          FLOAT       
 actual                        FLOAT       
 contador                      STRING      
-0                            CTE_ENT                                               
-02.5                         CTE_REAL                                              
-9                            CTE_ENT                                               
-1                            CTE_ENT                                               
-0.342                        CTE_REAL                                              
-2                            CTE_ENT                                               
+&cte1                        CTE_STR     _Prueba aakflkafhalfl         21          
+&cte2                        CTE_STR     _Hola                         5           
+&cte3                        CTE_ENT     0                                         
+&cte4                        CTE_REAL    02.5                                      
+&cte5                        CTE_REAL    0.0                                       
+&cte6                        CTE_ENT     9                                         
+&cte7                        CTE_ENT     1                                         
