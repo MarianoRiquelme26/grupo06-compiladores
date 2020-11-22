@@ -122,32 +122,21 @@ char *yyltext;
 
 %%
 programa :
-	 programa sentencia {
+		{
 		crear_pila(&pilaDatos);
 		crear_pila(&pilaTemporal);
-		printf("	FIN programa\n");}
-	|sentencia { 
+		printf("\t\tINICIA EL COMPILADOR\n");
+		}
+		bloque_declaracion bloque { 
 		prepararTSParaAssembler();
 		crearArchivoTS();
 		crearArchivoTercetosIntermedia();
+		printf(" FIN DE LOS BLOQUES\n");
+		}
+		{
+		printf("EMPIEZA ASSEMBLER\n");
 		generarAssembler();
-		printf("	FIN sentencia\n");};
-	
-sentencia:
-	 expresion {printf("	Sentencia es expresion\n");}
-	|bloque_declaracion {printf("	Sentencia es bloque_declaracion\n");}
-	|asig {printf("	Sentencia es asignacion\n");}
-	|iteracion 	{
-		crearTerceto(obtenerNuevoNombreEtiqueta("fin_repeat"),"_","_");
-		startEtiqueta = 0;
-	}
-	|salida {printf("	Sentencia es salida\n");}
-	|decision {
-		crearTerceto(obtenerNuevoNombreEtiqueta("fin_seleccion"),"_","_");
-		startEtiqueta = 0;
-	}
-	|entrada {printf("	Sentencia es entrada\n");}
-	|COMENTARIO;
+		};
 
 bloque_declaracion:
 	 DIM MENOR listaVariables MAYOR AS MENOR listaTipos MAYOR {printf("	Bloque declaracion\n");
@@ -199,6 +188,23 @@ tipo_dato:
 
 	};
 
+bloque : sentencia {printf("	Sentencia completa\n");}
+		 | bloque sentencia {printf("	Bloque completo\n");};
+
+sentencia:
+	 expresion {printf("	Sentencia es expresion\n");}
+	|asig {printf("	Sentencia es asignacion\n");}
+	|iteracion 	{
+		crearTerceto(obtenerNuevoNombreEtiqueta("fin_iteracion"),"_","_");
+		startEtiqueta = 0;
+	}
+	|salida {printf("	Sentencia es salida\n");}
+	|decision {
+		crearTerceto(obtenerNuevoNombreEtiqueta("fin_decision"),"_","_");
+		startEtiqueta = 0;
+	}
+	|entrada {printf("	Sentencia es entrada\n");}
+	|COMENTARIO;
 
 asig:
 	lista_id expresion FIN_SENT
@@ -313,7 +319,9 @@ entrada:
 	 FIN_SENT {printf("	Sentencia de entrada\n");};
 	 
 iteracion:
-	 WHILE PAR_I condicion PAR_F bloque {	printf("\t\tDefinicion de iteracion\n");
+	 WHILE {indiceAux=crearTerceto(obtenerNuevoNombreEtiqueta("inicio_repeat"),"_","_");
+			poner_en_pila(&pila,&indiceAux);}
+	PAR_I condicion PAR_F LLAVE_I bloque {	printf("\t\tDefinicion de iteracion\n");
 	int indiceDesapilado;
 	int indiceActual = obtenerIndiceActual();
 	if(pila_vacia(&pila_condicion_doble) == PILA_VACIA)
@@ -342,7 +350,7 @@ iteracion:
 	}
 	sacar_de_pila(&pila, &indiceDesapilado);
 	crearTerceto("JMP",armarIndiceI(indiceDesapilado),"_");
-	};
+	} LLAVE_F;
 
 condicion:
 	 comparacion {indiceComparador1 = indiceComparador;} AND comparacion {printf("	Comparacion con AND\n");
@@ -404,9 +412,6 @@ comparador:
 	|DISTINTO {printf("	Comparador distinto\n");
 		char comparadorApilado[8] = "JNE";
 		poner_en_pila(&pila,&comparadorApilado);};
-	
-bloque:
-	 LLAVE_I programa LLAVE_F {printf("	Bloque de codigo\n");};
 	 
 maximo:
 	MAX PAR_I lista_factores PAR_F {printf("	Definicion del maximo\n");};
@@ -416,8 +421,8 @@ lista_factores:
 	|expresion;
 
 decision:
-	IF PAR_I condicion PAR_F
-	bloque
+	IF PAR_I condicion PAR_F LLAVE_I
+	bloque LLAVE_F
 	{
 		int indiceDesapilado;
 		int indiceActual = obtenerIndiceActual();
@@ -445,8 +450,8 @@ decision:
 		}
 	}
 	|
-	IF PAR_I condicion PAR_F bloque {printf("\t\tIF\n");}
-	ELSE
+	IF PAR_I condicion PAR_F LLAVE_I bloque LLAVE_F{printf("\t\tIF\n");}
+	ELSE LLAVE_I bloque
 	{
 		printf("\t\tELSE\n");
 		int indiceDesapilado;
@@ -477,9 +482,9 @@ decision:
 		poner_en_pila(&pila, &indiceAux);
 
 		startEtiqueta = 0;
-	}
-	bloque
+	} LLAVE_F
 	{
+		printf("\t\tENDIF (con else)\n");
 		int indiceDesapilado;
 		int indiceActual = obtenerIndiceActual();
 		sacar_de_pila(&pila, &indiceDesapilado);
@@ -701,7 +706,7 @@ void imprimirFuncString(){
 void generarCodigo(){
     fprintf(pfASM, "\n.CODE ;Comienza sector de codigo\n");
 
-    imprimirFuncString();
+    //imprimirFuncString();
 
     //Comienza codigo usuario
     fprintf(pfASM, "START: \t\t;Codigo assembler resultante.\n");
@@ -723,7 +728,7 @@ void generarCodigo(){
 		strcpy(operador,tercetos[i].operador);
 		flag = 0;
 
-		if(strcmp(operador, ":=") == 0)
+		if(strcmp(operador, "=") == 0)
 		{
 			flag = 1;
 			fprintf(pfASM,"\t;ASIGNACIÓN\n");
@@ -734,7 +739,7 @@ void generarCodigo(){
     		char auxTipo[50] = "";
 			strcpy(auxTipo, tipo);
 
-			if(strcmp(tipo,"CTE_STR") == 0 || strcmp(tipo,"STRING") == 0)
+			if(strcmp(tipo,"CTE_STR") == 0 || strcmp(tipo,"STRING") == 0 || strcmp(tipo,"INTEGER") == 0 || strcmp(tipo,"FLOAT") == 0)
 			{
 				fprintf(pfASM, "\tmov ax,@DATA\n");
                 fprintf(pfASM, "\tmov es,ax\n");
@@ -937,33 +942,6 @@ void generarCodigo(){
 			poner_en_pila(&pVariables,&auxStr);
 		}
 
-		if(strcmp(operador, "GET") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;GET\n");
-			sacar_de_pila(&pVariables,&aux1);
-
-			char * tipo = recuperarTipoTS(aux1);
-    		char auxTipo[50] = "";
-			strcpy(auxTipo, tipo);
-
-			if(strcmp(tipo,"CTE_STR") == 0 || strcmp(tipo,"STRING") == 0)
-			{
-				fprintf(pfASM,"\tdisplayString %s\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-			if(strcmp(tipo,"CONST_INT") == 0 || strcmp(tipo,"INTEGER") == 0)
-			{
-   				fprintf(pfASM,"\tDisplayInteger %s 2\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-			if(strcmp(tipo,"CONST_REAL") == 0 || strcmp(tipo,"REAL") == 0)
-			{
-				fprintf(pfASM,"\tDisplayFloat %s 2\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-		}
-
 		if(strcmp(operador, "PUT") == 0)
 		{
 			flag = 1;
@@ -976,7 +954,34 @@ void generarCodigo(){
 
 			if(strcmp(tipo,"CTE_STR") == 0 || strcmp(tipo,"STRING") == 0)
 			{
-				fprintf(pfASM,"\tgetString %s\n\n",aux1);
+				fprintf(pfASM,"\tPutString %s\n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+			if(strcmp(tipo,"CONST_INT") == 0 || strcmp(tipo,"INTEGER") == 0)
+			{
+   				fprintf(pfASM,"\tPutInteger %s \n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+			if(strcmp(tipo,"CONST_REAL") == 0 || strcmp(tipo,"FLOAT") == 0)
+			{
+				fprintf(pfASM,"\tPutFloat %s \n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+		}
+
+		if(strcmp(operador, "GET") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;GET\n");
+			sacar_de_pila(&pVariables,&aux1);
+
+			char * tipo = recuperarTipoTS(aux1);
+    		char auxTipo[50] = "";
+			strcpy(auxTipo, tipo);
+
+			if(strcmp(tipo,"CTE_STR") == 0 || strcmp(tipo,"STRING") == 0)
+			{
+				fprintf(pfASM,"\tGetString %s\n\n",aux1);
 			}
 			else
 			{

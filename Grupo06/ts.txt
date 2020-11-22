@@ -7,5 +7,11 @@ contador                      STRING
 &cte3                        CTE_ENT     0                                         
 &cte4                        CTE_REAL    02.5                                      
 &cte5                        CTE_REAL    0.0                                       
-&cte6                        CTE_ENT     9                                         
-&cte7                        CTE_ENT     1                                         
+&cte6                        CTE_STR     _Otra                         5           
+&cte7                        CTE_ENT     9                                         
+&cte8                        CTE_ENT     1                                         
+&cte9                        CTE_REAL    0.342                                     
+&cte10                       CTE_STR     _La suma es:                  13          
+&cte11                       CTE_ENT     10                                        
+&cte12                       CTE_STR     _actual es mayor que 2        23          
+&cte13                       CTE_STR     _no es mayor que 2            18          
